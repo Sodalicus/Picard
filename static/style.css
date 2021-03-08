@@ -1,0 +1,40 @@
+/*
+ * style.css
+ * Copyright (C) 2021 Sodalicus
+ *
+ * Distributed under terms of the MIT license.
+ */
+
+body {
+	background: lightgray;
+	color: black;
+}
+
+
+#mainbox {
+    background: gray;
+    width: 250px;
+    border: solid 1px black;
+}
+
+.device_box {
+    background: lightgray;
+    width:199px;
+    height: 40px;
+    border: solid 1px black;
+    margin: 2px 25px;
+    padding: 0px;
+
+}
+
+.device_button {
+
+}
+
+.device_info {
+    display: inline;
+
+}
+
+
+
