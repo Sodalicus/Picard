@@ -15,7 +15,7 @@ import time, serial, os
 usbPort = '/dev/ttyUSB0'
 # Serial port setup
 
-dataToSend = b'2\n'
+dataToSend = b'3\n'
 
 def talk_to_ard(usbPort, dataToSend):
     if os.path.exists(usbPort):

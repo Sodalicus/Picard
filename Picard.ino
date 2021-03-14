@@ -3,16 +3,25 @@
 
 
 #define ONE_WIRE_BUS 2
-
+// button pin, currently doesn't work
 const byte button1 = 3;
+// buzzer pin
 const byte buzzer = 4;
 
-int ledState = LOW;
+// number of sockets to control
+const byte numberOfDevs = 2;
+// array to hold current state of the device(socket)
+bool devStates[numberOfDevs] = {LOW, LOW};
+// array to setup pin numbers of the devices(sockets)
+byte devPin[numberOfDevs] = {13, 12};
+
+int incByte = 0;
+
 byte buttonState;
 byte lastButtonState = HIGH;
-int incByte = 0;
 float lastTemp = 0.0;
 int lastTempTime = 0;
+
 
 unsigned long lastDebounceTime = 0;
 unsigned long debounceDelay = 50;
@@ -21,14 +30,19 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 void setup() {
+    for (int i = 0; i < numberOfDevs; i++) {
+        pinMode(devPin[i], OUTPUT);
+        digitalWrite(devPin[i], devStates[i]);
+    }
 
-    pinMode(LED_BUILTIN, OUTPUT);
     pinMode(buzzer, OUTPUT);
     pinMode(button1, INPUT_PULLUP);
+
     Serial.begin(9600);
     Serial.println("Ready");
-    digitalWrite(LED_BUILTIN, ledState);
+
     delay(500);
+
     lastTempTime = millis();
     sensors.begin();
 }
@@ -36,23 +50,15 @@ void setup() {
 void loop() {
     if (Serial.available() > 0) {
         incByte = Serial.parseInt();
-        if (incByte == 1) {
-        // Reverse state off led13 and send the current state back
-            ledState = ! ledState; 
-            digitalWrite(LED_BUILTIN, ledState);
-            Serial.println(0);
-        } else if (incByte == 2) {
-        // Play a tone
+        if ((incByte <= numberOfDevs) && (incByte >= 1)) {
+            devStates[incByte-1] = ! devStates[incByte-1]; 
+            digitalWrite(devPin[incByte-1], devStates[incByte-1]);
+            status();
+        } else if (incByte == 5) {
             tone(buzzer, 1000, 100);
-            Serial.println(0);
-        } else if (incByte == 3) {
-        // Send back the current state of led13
-            Serial.print("13:");
-            Serial.println(ledState);
-        } else if (incByte == 4) {
-        // Send back last temperature read
-           // Serial.print("Temp:");
-            Serial.println(lastTemp);
+            status();
+        } else if (incByte == 6) {
+            status();
         } else {
             Serial.println(1);
         }
@@ -69,31 +75,27 @@ void loop() {
             buttonState = reading;
             if (buttonState == LOW) {
                 tone(buzzer, 1000, 100);
-                ledState = !ledState;
-                Serial.println(ledState);
+                devStates[0] = !devStates[0];
+                digitalWrite(devPin[0], devStates[0]);
+                Serial.println(devStates[0]);
             }
         }
     }
 
-    digitalWrite(LED_BUILTIN, ledState);
     lastButtonState = reading;
     if ((millis() - lastTempTime) > 2000) {
         sensors.requestTemperatures();
         lastTemp = sensors.getTempCByIndex(0);
         lastTempTime = millis();
     }
-    /* 
-    if (digitalRead(button1) == LOW) {
-    digitalWrite(LED_BUILTIN, HIGH);
-    tone(buzzer, 1000);
-    } else {
-    digitalWrite(LED_BUILTIN, LOW);
-    noTone(buzzer);
-    }
-    if (Serial.available()) {
-    unsigned long freq = Serial.read();
-    tone(buzzer, freq, 2000);
-    }
-    */
+     
+    
 }
-
+void status() {
+for (int i = 0; i < numberOfDevs; i++) {
+    Serial.print(devStates[i]);
+    Serial.print(":");
+}
+Serial.print(lastTemp);
+Serial.println(";");
+}

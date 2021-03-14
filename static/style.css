@@ -13,16 +13,16 @@ body {
 
 #mainbox {
     background: gray;
-    width: 250px;
+    width: 198px;
     border: solid 1px black;
 }
 
 .device_box {
     background: lightgray;
-    width:199px;
+    width:192px;
     height: 40px;
     border: solid 1px black;
-    margin: 2px 25px;
+    margin: 2px 2px;
     padding: 0px;
 
 }

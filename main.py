@@ -24,7 +24,7 @@ app.config.update(dict(
 ))
 
 usbPort = '/dev/ttyUSB0'
-dataToSend = b'1\n'
+dataToSend = [b'1\n',b'2\n',b'3\n',b'4\n',b'5\n',b'6\b']
 ledState = 0
 
 def get_db():
@@ -43,21 +43,23 @@ def close_db(error):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    devices = ["Device#01", "Device#02", "Device#03", "Device#04"]
-    dev_stats = ["on", "off", "on", "off"]
-    ledState = talk_to_ard(usbPort,b'3\n')
-    flash('The LED is now: {}'.format(ledState))
-    return render_template('index.html', ledState=ledState, data=zip(devices,dev_stats))
+    devices = [1,2,3,4]
+    devStats = ["on", "off", "on", "off"]
+    status = talk_to_ard(usbPort,b'6\n')
+    flash('Status: {}'.format(status))
+    return render_template('index.html',data=zip(devices,devStats))
 
 @app.route('/beep', methods=['POST'])
 def beep():
-    talk_to_ard(usbPort, b'2\n')
+    talk_to_ard(usbPort, dataToSend[4])
     return redirect(url_for("index"))
     return render_template('index.html')
 
 @app.route('/switch', methods=["POST"])
 def switch():
-    talk_to_ard(usbPort, dataToSend)
+    devNumber = int(request.form['dev_switch'])
+    talk_to_ard(usbPort, dataToSend[devNumber-1])
+    flash('Clicked: {}'.format(devNumber))
     return redirect(url_for("index"))
     return render_template('index.html')
 

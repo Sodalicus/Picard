@@ -10,16 +10,19 @@
 <html>
 	<head>
         <meta charset="utf-8" />
-		<title>Index</title>
+		<title>Arduino Control</title>
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+        <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}"/>
+
 	</head>
 	<body>
         <div id="mainbox">
 
         {% for device,status in data %}
         <div class="device_box"> 
-          <div class="device_info">{{ device }} is: {{ status }}</div>  
+          <div class="device_info">Device#{{ device }} is: {{ status }}</div>  
         <form action="/switch" method="POST">
+            <input type="hidden" name="dev_switch" value="{{ device }}" />
         <button class="device_button" type="submit">Switch</button>
         </form>
         </div>
@@ -28,21 +31,24 @@
 
 
         <div class="device_box"> 
-        Device#01
+        Buzzer 
         <form action="/beep" method="POST">
         <button class="device_button" type="submit">Beep</button>
         </form>
         </div>
 
     
-    <div class="device_box">
+<!--    <div class="device_box">
     Variable ledState: {{ ledState }}
     </br>
     {% for message in get_flashed_messages() %}
         {{ message }}
     {% endfor %}
-    </div> 
+</div> -->
         </div>
 		
+    {% for message in get_flashed_messages() %}
+    {{ message }}</br>
+    {% endfor %}
 	</body>
 </html>
