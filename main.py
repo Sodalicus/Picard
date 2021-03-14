@@ -44,8 +44,11 @@ def close_db(error):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     devices = [1,2,3,4]
-    devStats = ["on", "off", "on", "off"]
+    devStats = []
     status = talk_to_ard(usbPort,b'6\n')
+    for i in range(2):
+        devStats.append(status.split(":")[i])
+
     flash('Status: {}'.format(status))
     return render_template('index.html',data=zip(devices,devStats))
 

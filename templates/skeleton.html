@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+
+<!--
+  skeleton.html 
+  Copyright (C) 2021 Sodalicus
+ 
+  Distributed under terms of the MIT license.
+ /
+-->
+<html>
+	<head>
+        <meta charset="utf-8" />
+        <title>{% block title %}{% endblock %} - Picard</title>
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+        <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}"/>
+
+	</head>
+	<body>
+            <ul>
+                <li><a href="#menu01">Controls</a></li>
+                <li><a href="#menu02">Temp Graph</a></li>
+                <li><a href="#menu03">About</a></li>
+            </ul>
+            </br>
+        {% block content %}{% endblock %}
+	</body>
+</html>
+

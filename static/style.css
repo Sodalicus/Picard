@@ -7,17 +7,50 @@
 
 body {
 	background: lightgray;
-	color: black;
+    padding: 0px;
+    padding-top: 50px;
+    margin: 0px;
+    
 }
 
+
+ul {
+    background: grey;
+    position: fixed;
+    overflow: hidden;
+    top: 0;
+    width: 100%;
+    list-style-type: none;
+    display: inline-block;
+    margin: 0; 
+    padding: 0;
+    overflow: hidden;
+}
+
+li {
+    float: left;
+}
+
+li a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+li a:hover {
+  background-color: #111;
+}
 
 #mainbox {
     background: gray;
     width: 198px;
     border: solid 1px black;
+    margin-left: 20px;
 }
 
-.device_box {
+div.device_box {
     background: lightgray;
     width:192px;
     height: 40px;
@@ -27,11 +60,11 @@ body {
 
 }
 
-.device_button {
+button.device_button {
 
 }
 
-.device_info {
+div.device_info {
     display: inline;
 
 }
