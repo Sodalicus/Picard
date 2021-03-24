@@ -17,29 +17,37 @@ db_file = "data.db"
 DELAY = 180
 t0 = time.time()
 usbPort = '/dev/ttyUSB0'
-dataToSend = b'4\n'
+#current_time = time.strftime("%Y-%m-%d,%H:%M:%S")
+dataToSend = b'6\n' # this code just makes arduino just return status
 
-def temp_time():
+def get_status():
     """Return temperature reading and current timestamp"""
-    temp = talk_to_ard(usbPort, dataToSend)
-    temp = float(temp)
-    return temp, time.strftime("%Y-%m-%d %H:%M:%S")
+    status = talk_to_ard(usbPort, dataToSend)
+    if status != 1:
+        status = status.split(":")
+        return status
+    else:
+        return(1)
 
+#print(get_status())
 
-def save_temp():
+def save_status():
     if os.path.isfile(db_file):
         con = sqlite3.connect(db_file)
         con.row_factory = sqlite3.Row
         cur = con.cursor()
-        temp = temp_time()
-        print(temp)
+        status = get_status()
+        if status != 1:
+            cur.execute('INSERT INTO reading (dev01, dev02, dev03, dev04, temp_ins0, temp_ins1, hum_ins1, temp_out0, alive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', status)
+            con.commit()
+            con.close()
+#save_status()
 
-        cur.execute('INSERT INTO sensors VALUES (NULL, ?, ?);',
-                temp)
-        con.commit()
-        con.close()
+def main():
+    while True:
+        save_status()
+        talk_to_ard(usbPort, b'5\n')
+        print("*")
+        time.sleep(180)
 
-while True:
-    time.sleep(3)
-    save_temp()
-    print("*")
+main()

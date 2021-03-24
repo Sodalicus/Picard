@@ -14,11 +14,13 @@
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
         <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}"/>
 
+        {% block extLib %}
+        {% endblock %}
 	</head>
 	<body>
             <ul>
-                <li><a href="#menu01">Controls</a></li>
-                <li><a href="#menu02">Temp Graph</a></li>
+                <li><a href="/">Controls</a></li>
+                <li><a href="/temp_graph">Temp Graph</a></li>
                 <li><a href="#menu03">About</a></li>
             </ul>
             </br>

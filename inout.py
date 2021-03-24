@@ -30,21 +30,10 @@ def talk_to_ard(usbPort, dataToSend):
         return(1)
 
     ser.write(dataToSend)
-    x = ser.readline()
-    text = x.decode()
+    byteString = ser.readline()
+    text = byteString.decode().rstrip()
     ser.close()
     return(text)
 
 #print(talk_to_ard(usbPort, dataToSend))
 
-"""
-time0 = time.time()
-text2 = ["0","0"]
-while True:
-    x = ser.readline()
-    text = x.decode('ascii')
-    if time.time() - time0 > 0.1:
-        time0 = time.time()
-        if text:
-            text2 = text.split(",")
-"""
