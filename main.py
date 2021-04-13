@@ -12,10 +12,12 @@
 
 from flask import Flask, g
 from flask import render_template, request, redirect, url_for, flash
+from flask import session 
 import sqlite3
 from inout import talk_to_ard
-from base import fake_temp
 import os
+import time
+import datetime
 
 app = Flask(__name__)
 app.config.update(dict(
@@ -26,7 +28,6 @@ app.config.update(dict(
 
 usbPort = '/dev/ttyUSB0'
 dataToSend = [b'1\n',b'2\n',b'3\n',b'4\n',b'5\n',b'6\b']
-#talk_to_ard = fake_temp
 
 def get_db():
     """Create connection to database """
@@ -36,43 +37,57 @@ def get_db():
         g.db = con
     return g.db
 
-def retrive_data():
-    """Get data from the base"""
-    get_db()
-    g.db.row_factory = sqlite3.Row
-    cur = g.db.cursor()
-    period = datetime('now', '-3 hours')
-    sqlStatement = "SELECT * FROM reading WHERE time_added > datetime('now', '-1 hours');"
-    cur.execute(sqlStatement)
-    results = cur.fetchall()
-    status = {'temp_ins0': [], 'temp_out0': [], 'datetime': []}
-    for result in results:
-        status['temp_ins0'].append(result['temp_ins0'])
-        status['temp_out0'].append(result['temp_out0'])
-        status['datetime'].append(result['time_added'])
-    return status
-
-
-
 @app.teardown_appcontext
 def close_db(error):
     """Close connection to db"""
     if g.get('db'):
         g.db.close()
 
+
+def retrive_data(time0, time1):
+    """Get data from the base"""
+    cur = get_db.cursor()
+    sqlQuery = "SELECT * FROM reading WHERE time_added BETWEEN (?) AND (?) ORDER BY time_added;"
+    cur.execute(sqlQuery, (time0, time1))
+    results = cur.fetchall()
+    status = {'temp_ins0': [], 'temp_out0': [], 'time_added': []}
+    for result in results:
+        status['temp_ins0'].append(result['temp_ins0'])
+        status['temp_out0'].append(result['temp_out0'])
+        status['time_added'].append(result['time_added'])
+    return status
+
+
+
+def read_devices_info():
+    """Read device info (name, type, switchability, description)
+       from table device"""
+    cur = get_db().cursor()
+    sqlQuery = "SELECT * FROM device;"
+    cur.execute(sqlQuery)
+    results = cur.fetchall()
+    devices = []
+    for row in results:
+        devices.append(dict((cur.description[idx][0], value)
+                for idx, value in enumerate(row)))
+    return devices
+
+
+
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    devices = [1,2,3,4]
+    devices = read_devices_info()
     devStats = []
     status = talk_to_ard(usbPort,b'6\n')
     if status == 1:
         print("Arduino not connected")
     else:
-        for i in range(4):
-            devStats.append(status.split(":")[i])
+        for i in range(len(status)):
+            devStats.append(status[i])
 
     flash('Status: {}'.format(status))
-    return render_template('index.html',data=zip(devices,devStats))
+    return render_template('index.html',devices = devices)
 
 @app.route('/beep', methods=['POST'])
 def beep():
@@ -88,13 +103,25 @@ def switch():
     return redirect(url_for("index"))
     return render_template('index.html')
 
-@app.route('/temp_graph', methods=["GET"])
+@app.route('/temp_graph', methods=["GET", "POST"])
 def temp_graph():
-    values = retrive_data()['temp_ins0']
-    values2 = retrive_data()['temp_out0']
-    labels = retrive_data()['datetime']
+    if request.method == "POST":
+        time0 = request.form['time0']
+        time1 = request.form['time1']
+        values = retrive_data(time0, time1)['temp_ins0']
+        values2 = retrive_data(time0, time1)['temp_out0']
+        labels = retrive_data(time0, time1)['time_added']
+        return render_template('temp_graph.html', title='Temperature history', max=50, labels=labels, values=values, values2=values2, time0=time0, time1=time1)
+    else:
+        time0 = (datetime.datetime.now()-datetime.timedelta(1)).strftime("%Y-%m-%d")
+        time1 = datetime.datetime.now().strftime("%Y-%m-%d")
+        print(time0)
+        print(time1)
+        values = retrive_data(time0, time1)['temp_ins0']
+        values2 = retrive_data(time0, time1)['temp_out0']
+        labels = retrive_data(time0, time1)['time_added']
 
-    return render_template('temp_graph.html', title='Temperature history', max=50, labels=labels, values=values, values2=values2)
+        return render_template('temp_graph.html', title='Temperature history', max=50, labels=labels, values=values, values2=values2, time0=time0, time1=time1)
 
 
 if __name__ == '__main__':

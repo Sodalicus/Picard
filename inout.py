@@ -15,7 +15,7 @@ import time, serial, os
 usbPort = '/dev/ttyUSB0'
 # Serial port setup
 
-dataToSend = b'3\n'
+dataToSend = b'6\n'
 
 def talk_to_ard(usbPort, dataToSend):
     if os.path.exists(usbPort):
@@ -33,7 +33,8 @@ def talk_to_ard(usbPort, dataToSend):
     byteString = ser.readline()
     text = byteString.decode().rstrip()
     ser.close()
-    return(text)
+    status = text.split(":")
+    return status
 
-#print(talk_to_ard(usbPort, dataToSend))
+#print(len(talk_to_ard(usbPort, dataToSend)))
 

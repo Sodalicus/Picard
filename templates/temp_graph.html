@@ -6,11 +6,34 @@
 -->
 {% endblock %}
 {% block content %}
+    <div id="mainbox_temp">
     <h1>{{ title }}</h1>
 
+    <form action="/temp_graph" method="post">
+      <label for="time0">From day:</label>
+      <input type="date" id="time0" name="time0" value="2021-03-31">
+
+      <label for="time1">To day:</label>
+      <input type="date" id="time1" name="time1" value="2021-04-01">
+      <input type="submit" value="Submit">
+    </form>
+
+    <p>Time0: {{ time0 }}</p>
+    <p>Time1: {{ time1 }}</p>
+
     <canvas id="chart" width="600" height="400"></canvas>
+
     <script>
 
+      Chart.defaults.global.animationSteps = 1;
+      Chart.defaults.global.tooltipYPadding = 16;
+      Chart.defaults.global.tooltipCornerRadius = 0;
+      Chart.defaults.global.tooltipTitleFontStyle = "normal";
+      Chart.defaults.global.tooltipFillColor = "rgba(0,0,0,0.8)";
+      Chart.defaults.global.animationEasing = "easeOutBounce";
+      Chart.defaults.global.responsive = false;
+      Chart.defaults.global.scaleLineColor = "black";
+      Chart.defaults.global.scaleFontSize = 16;
       // bar chart data
       var barData = {
         labels : [
@@ -19,7 +42,8 @@
           {% endfor %}
         ],
           datasets : [{
-          fill: false,
+          fill: true,
+          backgroundColor: 'rgba(11,100,43,1)',
           fillColor: "rgba(151,187,205,0.2)",
           strokeColor: "rgba(151,187,205,1)",
           pointColor: "rgba(151,187,205,1)",
@@ -27,6 +51,8 @@
           pointHighlightFill: "#fff",
           pointHighlightStroke: "rgba(151,187,205,1)",
           bezierCurve : false,
+          pointRadius : 1,
+          pointStyle : 'cross',
 
         data : [
 	    {% for item in values %}
@@ -40,20 +66,6 @@
           }]
         }
 	
-      Chart.defaults.global.animationSteps = 50;
-      Chart.defaults.global.tooltipYPadding = 16;
-      Chart.defaults.global.tooltipCornerRadius = 0;
-      Chart.defaults.global.tooltipTitleFontStyle = "normal";
-      Chart.defaults.global.tooltipFillColor = "rgba(0,0,0,0.8)";
-      Chart.defaults.global.animationEasing = "easeOutBounce";
-      Chart.defaults.global.responsive = false;
-      Chart.defaults.global.scaleLineColor = "black";
-      Chart.defaults.global.scaleFontSize = 16;
-
-
-      
-	
-      
 
 
       // get bar chart canvas
@@ -68,7 +80,7 @@
         scaleSteps: steps,
         scaleStepWidth: Math.ceil(max / steps),
         scaleStartValue: 0,
-        scaleShowVerticalLines: true,
+        scaleShowVerticalLines: false,
         scaleShowGridLines : true,
         barShowStroke : true,
         scaleShowLabels: true,
@@ -76,4 +88,5 @@
 
 
     </script>
+    </div>
 {% endblock %}
