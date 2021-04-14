@@ -5,16 +5,23 @@
         <div id="mainbox">
 
         {% for device in devices %}
-        <div class="device_box"> 
-            <div class="device_info">{{ device['name'] }}</div>  
+
         {% if device['switchable'] == 'true' %}
-        {{ device['description'] }}
+        <div class="device_box"> 
+        <div class="device_info">{{ device['name'] }} {{ device['status'] }} {{ device['description'] }}
         <form action="/switch" method="POST">
         <input type="hidden" name="dev_switch" value="{{ device['id'] }}" />
         <button class="device_button" type="submit">Switch</button>
         </form>
-        {% endif %}
         </div>
+        </div>
+
+        {% else %}
+        <div class="device_box"> 
+        <div class="device_info">{{ device['name'] }} {{ device['status'] }} {{ device['unit'] }} {{ device['description'] }}
+        </div>
+        </div>
+        {% endif %}
         {% endfor %}
         
 

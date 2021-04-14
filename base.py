@@ -59,7 +59,7 @@ def create_db(db_file):
                 CREATE TABLE IF NOT EXISTS device (
                 id INTEGER PRIMARY KEY ASC,
                 name TEXT NOT NULL,
-                datatype TEXT,
+                unit TEXT,
                 switchable BOOL NOT NULL,
                 description TEXT
                 );""")
@@ -77,7 +77,7 @@ def fill_default(db_file):
         cur.execute("DELETE FROM device")
         dev_defs = load_from_csv("devices.csv")
         for dev in dev_defs:
-            cur.execute('INSERT INTO device (name, datatype, switchable, description) VALUES(?, ?, ?, ?)', dev)
+            cur.execute('INSERT INTO device (name, unit, switchable, description) VALUES(?, ?, ?, ?)', dev)
         con.commit()
         con.close()
 

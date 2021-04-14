@@ -78,13 +78,13 @@ def read_devices_info():
 @app.route('/', methods=['GET', 'POST'])
 def index():
     devices = read_devices_info()
-    devStats = []
     status = talk_to_ard(usbPort,b'6\n')
     if status == 1:
         print("Arduino not connected")
-    else:
-        for i in range(len(status)):
-            devStats.append(status[i])
+        status = [0]*9
+    for device in devices:
+        device['status'] = status[device['id']-1]
+    print(devices)
 
     flash('Status: {}'.format(status))
     return render_template('index.html',devices = devices)
