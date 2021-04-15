@@ -4,6 +4,6 @@ Wall socket;bool;true;Not Connected
 Wall socket;bool;true;Not Connected
 Temperature;C;false;Temperature inside #1 - DS18B20
 Temperature;C;false;Temperature inside #2 - DHT11
-Temperature;C;false;Temperature outside #1 - DS18B20
 Humidity;%;false;Humidity inside - DHT11
+Temperature;C;false;Temperature outside #1 - DS18B20
 Time alive;minutes;false;Arduino uptime

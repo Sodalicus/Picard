@@ -64,11 +64,11 @@ div.device_box {
     border: solid 1px black;
     margin: 2px 2px;
     padding: 0px;
-
 }
 
 button.device_button {
-
+    float: left;
+    margin-left: 2px;
 }
 
 div.device_info {

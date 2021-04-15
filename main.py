@@ -18,6 +18,9 @@ from inout import talk_to_ard
 import os
 import time
 import datetime
+from mpyg321.mpyg321 import MPyg321Player
+
+player = MPyg321Player()
 
 app = Flask(__name__)
 app.config.update(dict(
@@ -123,6 +126,15 @@ def temp_graph():
 
         return render_template('temp_graph.html', title='Temperature history', max=50, labels=labels, values=values, values2=values2, time0=time0, time1=time1)
 
+@app.route('/playnoise', methods=["POST"])
+def play_noise():
+    player.play_song("./noise.mp3", loop=True)
+    return redirect(url_for("index"))
+
+@app.route('/stopnoise', methods=["POST"])
+def stop_noise():
+    player.stop()
+    return redirect(url_for("index"))
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
