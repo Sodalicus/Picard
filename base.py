@@ -61,6 +61,7 @@ def create_db(db_file):
                 name TEXT NOT NULL,
                 unit TEXT,
                 switchable BOOL NOT NULL,
+                outside BOOL NOT NULL,
                 description TEXT
                 );""")
         con.commit()
@@ -77,7 +78,7 @@ def fill_default(db_file):
         cur.execute("DELETE FROM device")
         dev_defs = load_from_csv("devices.csv")
         for dev in dev_defs:
-            cur.execute('INSERT INTO device (name, unit, switchable, description) VALUES(?, ?, ?, ?)', dev)
+            cur.execute('INSERT INTO device (name, unit, switchable, outside, description) VALUES(?, ?, ?, ?, ?)', dev)
         con.commit()
         con.close()
 

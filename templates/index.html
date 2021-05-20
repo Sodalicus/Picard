@@ -7,52 +7,34 @@
         {% for device in devices %}
 
         {% if device['switchable'] == 'true' %}
-        <div class="device_box"> 
-        <div class="device_info">{{ device['name'] }} {{ device['status'] }} {{ device['description'] }}
         <form action="/switch" method="POST">
         <input type="hidden" name="dev_switch" value="{{ device['id'] }}" />
-        <button class="device_button" type="submit">Switch</button>
+        <button class="device_button" type="submit">{{ device['name'] }}</button>
         </form>
-        </div>
-        </div>
+        {% endif %}
+        {% endfor %}
+        <br>
+        <br>
 
-        {% else %}
-        <div class="device_box"> 
-        <div class="device_info">{{ device['name'] }} {{ device['status'] }} {{ device['unit'] }} {{ device['description'] }}
-        </div>
+        {% for device in devices %}
+        {% if device['switchable'] == 'false' %}
+        <div class="device_info"><img src="{{ url_for('static', filename='home.png') }}" width=16>{{ device['name'] }} {{ device['status'] }} {{ device['unit'] }} {{ device['description'] }}
         </div>
         {% endif %}
         {% endfor %}
         
 
 
-        <div class="device_box"> 
-        Buzzer 
         <form action="/beep" method="POST">
-        <button class="device_button" type="submit">Beep</button>
+        <button class="device_button" type="submit">Buzzer</button>
         </form>
-        </div>
 
-        <div class="device_box"> 
-        Noise
         <form action="/playnoise" method="POST">
-        <button class="device_button" type="submit">Play</button>
+        <button class="device_button" type="submit">Noise</button>
         </form>
-        <form action="/stopnoise" method="POST">
-        <button class="device_button" type="submit">Stop</button>
-        </form>
-        </div>
 
     
-<!--    <div class="device_box">
-    Variable ledState: {{ ledState }}
-    </br>
-    {% for message in get_flashed_messages() %}
-        {{ message }}
-    {% endfor %}
-</div> -->
         </div>
-		
         {% for message in get_flashed_messages() %}
         {{ message }}</br>
         {% endfor %}
