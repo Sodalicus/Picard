@@ -29,8 +29,16 @@ app.config.update(dict(
     SITE_NAME='Remote Control'
 ))
 
-usbPort = '/dev/ttyUSB0'
 dataToSend = [b'1\n',b'2\n',b'3\n',b'4\n',b'5\n',b'6\b']
+
+def find_usb():
+    """Return current path to arduino's clone serial device"""
+    for x in range(10):
+        usbDev = r"/dev/ttyUSB"+str(x)
+        if os.path.exists(usbDev):
+            return usbDev
+        else:
+            return 1
 
 def get_db():
     """Create connection to database """
@@ -81,6 +89,7 @@ def read_devices_info():
 @app.route('/', methods=['GET', 'POST'])
 def index():
     devices = read_devices_info()
+    usbPort = find_usb()
     status = talk_to_ard(usbPort,b'6\n')
     if status == 1:
         print("Arduino not connected")
