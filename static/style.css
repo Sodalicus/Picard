@@ -10,7 +10,16 @@ body {
     padding: 0px;
     padding-top: 50px;
     margin: 0px;
-    
+    font-size: 14px;
+    font-family: arial;
+}    
+
+
+button {
+    padding: 0px;
+    border: 0px;
+    font-size: 12px;
+    font-family: arial;
 }
 
 
@@ -44,8 +53,9 @@ li a:hover {
 }
 
 #mainbox {
-    background: gray;
-    width: 298px;
+    background: white;
+    width: 800px;
+    height: 600px;
     border: solid 1px black;
     margin-left: 20px;
 }
@@ -57,24 +67,17 @@ li a:hover {
     padding-left: 20px;
 }
 
-div.device_box {
-    background: lightgray;
-    width:292px;
-    height: 40px;
-    border: solid 1px black;
-    margin: 2px 2px;
-    padding: 0px;
-}
 
 button.device_button {
     float: left;
-    margin-left: 2px;
+    margin: 2px;
+    padding: 2px;
+    background: grey;
 }
 
 div.device_info {
     padding: 2px;
-    display: inline;
-    overflow: auto;
+    display: block;
 
 }
 
