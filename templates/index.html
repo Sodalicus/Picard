@@ -18,20 +18,47 @@
 
         {% for device in devices %}
         {% if device['switchable'] == 'false' %}
-        <div class="device_info"><img src="{{ url_for('static', filename='home.png') }}" width=16>{{ device['name'] }} {{ device['status'] }} {{ device['unit'] }} {{ device['description'] }}
+        <div class="device_info">
+            {% if device['outside'] == 'false' %}
+            <img src="{{ url_for('static', filename='home.png') }}" width=16>
+            {% else %}
+            <img src="{{ url_for('static', filename='sun.png') }}" width=16>
+            {% endif %}
+
+            {% if device['unit'] == 'celsius' %}
+            <img src="{{ url_for('static', filename='thermo2.png') }}" width=16>
+            {% elif device['unit'] == 'percents' %}
+            <img src="{{ url_for('static', filename='drop.png') }}" width=16>
+            {% endif %}
+            {{ device['status'] }} 
+            {% autoescape false %}
+            {{ device['symbol'] }}
+            {% endautoescape %}
+
+
         </div>
         {% endif %}
         {% endfor %}
         
 
+        <form action="/noise" method="POST">
+        <button class="device_button" type="submit">noise</button>
+        </form>
+
+        <form action="/radio" method="POST">
+        <button class="device_button" type="submit">radio</button>
+        </form>
 
         <form action="/beep" method="POST">
-        <button class="device_button" type="submit">Buzzer</button>
+        <button class="device_button" type="submit">buzzer</button>
         </form>
 
-        <form action="/playnoise" method="POST">
-        <button class="device_button" type="submit">Noise</button>
-        </form>
+        <br />
+        <br />
+        Last readings: {{ mostRecent }}
+        {% for column in devices %}
+        {{ column }} :
+        {% endfor %}
 
     
         </div>
