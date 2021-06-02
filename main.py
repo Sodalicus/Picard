@@ -84,7 +84,7 @@ def index():
         else:
             device['symbol'] = None
     mostRecent = status[10]
-    flash('Status: {}'.format(status))
+    #flash('Status: {}'.format(status))
     return render_template('index.html',devices = devices, mostRecent = mostRecent)
 
 

@@ -56,15 +56,18 @@
         <br />
         <br />
         Last readings: {{ mostRecent }}
+        <!--
         {% for column in devices %}
         {{ column }} :
         {% endfor %}
-
+        -->
+        <br />
+        <br />
+        {% for message in get_flashed_messages() %}
+        {{ message }}<br />
+        {% endfor %}
     
         </div>
-        {% for message in get_flashed_messages() %}
-        {{ message }}</br>
-        {% endfor %}
 {% endblock %}
 
 
