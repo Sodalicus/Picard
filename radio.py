@@ -11,45 +11,36 @@
 """
 import vlc
 
-sources = { "radio" : "https://ch02.cdn.eurozet.pl/CHIDEP.mp3",
-            "noise" : "./noise.mp3" }
 
 class MPlayer:
-    radioStream = "https://ch02.cdn.eurozet.pl/CHIDEP.mp3"
-    noiseFile = "./noise.mp3"
-    noisePlaying = False
-    radioPlaying = False
+    sources = { "radio" : "https://ch02.cdn.eurozet.pl/CHIDEP.mp3",
+            "noise" : "./noise.mp3" }
 
     def __init__(self):
         self.vlcInstance = vlc.Instance("--aout=pulseaudio")
         self.player = self.vlcInstance.media_player_new()
+        self.nowPlaying = None
 
-
-    def radio(self):
-        if  MPlayer.noisePlaying == True: 
-            self.player.stop()
-            MPlayer.noisePlaying = False
-        if  MPlayer.radioPlaying == False:
-            source = self.vlcInstance.media_new(MPlayer.radioStream)
-            self.player.set_media(source)
-            self.player.play()
-            MPlayer.radioPlaying = True
+    def play(self, srcName):
+        if srcName in MPlayer.sources.keys():
+            if srcName  == self.nowPlaying:
+                self.player.stop()
+                self.nowPlaying = None
+            else:
+                source = self.vlcInstance.media_new(MPlayer.sources[srcName])
+                self.player.set_media(source)
+                self.player.play()
+                self.nowPlaying = srcName
         else:
             self.player.stop()
-            MPlayer.radioPlaying = False
+            self.nowPlaying = None
 
-    def noise(self):
-        if  MPlayer.radioPlaying == True: 
-            self.player.stop()
-            MPlayer.radioPlaying = False
-        if  MPlayer.noisePlaying == False:
-            source = self.vlcInstance.media_new(MPlayer.noiseFile)
-            self.player.set_media(source)
-            self.player.play()
-            MPlayer.noisePlaying = True
+    def now_playing(self):
+        if self.player.is_playing():
+            return self.nowPlaying
         else:
-            self.player.stop()
-            MPlayer.noisePlaying = False
+            return None
+
 
 
 

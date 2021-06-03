@@ -99,12 +99,12 @@ def switch():
 
 @app.route('/radio', methods=["POST"])
 def play_radio():
-    player.radio()
+    player.play("radio")
     return redirect(url_for("index"))
 
 @app.route('/noise', methods=["POST"])
 def play_noise():
-    player.noise()
+    player.play("noise")
     return redirect(url_for("index"))
 
 
