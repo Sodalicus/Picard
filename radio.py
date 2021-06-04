@@ -20,6 +20,7 @@ class MPlayer:
         self.vlcInstance = vlc.Instance("--aout=pulseaudio")
         self.player = self.vlcInstance.media_player_new()
         self.nowPlaying = None
+        self.volume = 0
 
     def play(self, srcName):
         if srcName in MPlayer.sources.keys():
@@ -40,6 +41,25 @@ class MPlayer:
             return self.nowPlaying
         else:
             return None
+
+    def return_volume(self):
+        return self.player.audio_get_volume()
+
+    def volume_up(self):
+        currentVolume = self.return_volume()
+        if currentVolume + 5 > 140:
+            newVolume = 140
+        else:
+            newVolume = currentVolume + 5
+            self.player.audio_set_volume(newVolume)
+
+    def volume_down(self):
+        currentVolume = self.return_volume()
+        if currentVolume - 5 < 0:
+            newVolume = 0
+        else:
+            newVolume = currentVolume - 5
+            self.player.audio_set_volume(newVolume)
 
 
 

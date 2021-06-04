@@ -85,7 +85,13 @@ def index():
             device['symbol'] = None
     mostRecent = status[10]
     #flash('Status: {}'.format(status))
-    return render_template('index.html',devices = devices, mostRecent = mostRecent)
+    nowPlaying = player.now_playing()
+    volume = player.return_volume()
+    return render_template('index.html',\
+            devices = devices,\
+            mostRecent = mostRecent,\
+            nowPlaying = nowPlaying,\
+            volume = volume)
 
 
 @app.route('/switch', methods=["POST"])
@@ -111,6 +117,16 @@ def play_noise():
 @app.route('/beep', methods=['POST'])
 def beep():
     talk_to_ard(4)
+    return redirect(url_for("index"))
+
+@app.route('/volumeup', methods=['POST'])
+def volume_up():
+    player.volume_up()
+    return redirect(url_for("index"))
+
+@app.route('/volumedown', methods=['POST'])
+def volume_down():
+    player.volume_down()
     return redirect(url_for("index"))
 
 

@@ -55,6 +55,19 @@
 
         <br />
         <br />
+
+        <form action="/volumeup" method="POST">
+        <button class="device_button" type="submit">Volume+</button>
+        </form>
+
+        <form action="/volumedown" method="POST">
+        <button class="device_button" type="submit">Volume-</button>
+        </form>
+
+        <br />
+        <br />
+        Now playing: {{ nowPlaying }} <br />
+        Volume: {{ volume }} <br />
         Last readings: {{ mostRecent }}
         <!--
         {% for column in devices %}
