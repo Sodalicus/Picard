@@ -7,7 +7,7 @@
 # Distributed under terms of the MIT license.
 
 """
-
+Create new empty databases, load devices information from cvs file.
 """
 
 import sqlite3, os, datetime, time, csv

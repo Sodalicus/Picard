@@ -48,7 +48,7 @@ def talk_to_ard(cmdIndex):
     byteString = ser.readline()
     ser.close()
 
-    response = byteString.decode().rstrip()
+    text = byteString.decode().rstrip()
     response = text.split(":")
     return response
 
