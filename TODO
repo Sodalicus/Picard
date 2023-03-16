@@ -1,0 +1,16 @@
+
+
+- arduino must send reading on its own in x min periods, but stiil must reacts to commands - DONE
+- db for sensors and readings - DONE, currently only one temperature
+- web page with text fields for viewing and editing radios(urls/names) - DONE
+    - sensors(names, locations, units)
+- change the main web page to fit all the new changes(web page is now a client, not the main app)
+- add sensors database to create default db function - DONE? wtf did I mean?
+- serial port reading selector and handler for the main app - DONE
+
+
+- button for each row of radios in setting page, for playing given radio
+- drow-down list with lots of radios and a button to play given one
+- database as a way to pass variables(nowPlaying - name, url) from main app to a client
+- some sort of checking the integrity and clean up of variables at the app startup,
+  operation are mostly UPDATEs, so certain row have to be there.

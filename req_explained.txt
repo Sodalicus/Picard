@@ -1,0 +1,26 @@
+pyserial - serial connection
+evdev - irda
+
+luma.led-matrix - 7 segment display:
+pillow, cbor2, smbus2, spidev, RPI.GPIO, pyusb, pyftdi, luma.core, rpi-ws281x, luma.led-matrix
+flask - framework:
+itsdangerous, zipp, typing-extensions, importlib-metadata, click, MarkupSafe, Jinja2, Werkzeug, flask
+
+Media playing:
+- VLC
+- vlc-python
+
+For communication with Arduino by USB/serial:
+- pyserial
+- selectors - for 
+
+For InfraRed communication by remote with Raspberry:
+- ir-keytable - for managing Linux IR
+- evdev - for catching rc events
+
+For 7-segment display:
+- luma.max7219 
+
+Arduino libs:
+- OneWire
+- DallasTemperature

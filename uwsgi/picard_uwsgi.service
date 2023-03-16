@@ -1,0 +1,25 @@
+[Unit]
+# Unit file for running uwsgi server at boot, using systemd
+Description=picard uWSGI app
+After=networking.target
+Wants=networking.target
+
+[Service]
+ExecStart=/usr/local/bin/uwsgi \
+        --ini /etc/uwsgi/apps-available/picard_uwsgi.ini
+ExecStop=/usr/local/bin/uwsgi --stop /run/uwsgi/picard.pid
+User=picard
+Group=picard
+Restart=on-failure
+KillSignal=SIGQUIT
+Type=notify
+StandardError=syslog
+NotifyAccess=all
+
+WorkingDirectory=/var/lib/www/picard/
+LogsDirectory= uwsgi
+RuntimeDirectory= uwsgi
+
+[Install]
+WantedBy=multi-user.target
+Alias=picard_uwsgi.service

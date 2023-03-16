@@ -1,0 +1,97 @@
+/*
+ * style.css
+ * Copyright (C) 2021 Paweł Krzemiński 
+ *
+ * Distributed under terms of the MIT license.
+ */
+
+body {
+	background: lightgray;
+    padding: 0px;
+    padding-top: 50px;
+    margin: 0px;
+    font-size: 14px;
+    font-family: arial;
+}    
+
+
+button {
+    padding: 0px;
+    border: 0px;
+    font-size: 12px;
+    font-family: arial;
+}
+
+
+ul {
+    background: grey;
+    position: fixed;
+    overflow: hidden;
+    top: 0;
+    width: 100%;
+    list-style-type: none;
+    display: inline-block;
+    margin: 0; 
+    padding: 0;
+    overflow: hidden;
+}
+
+li {
+    float: left;
+}
+
+li a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+li a:hover {
+  background-color: #111;
+}
+
+#mainbox {
+    background: white;
+    width: 600px;
+    height: 600px;
+    border: solid 1px black;
+    margin-left: 20px;
+}
+
+#mainbox_temp {
+    width: 700;
+    border: solid 1px black;
+    margin-left: 20px;
+    padding-left: 20px;
+}
+
+#RadioName {
+    width: 100px;
+    margin-left: 5px;
+}
+
+#RadioUrl {
+    width: 400px;
+}
+
+
+button.device_button {
+    float: left;
+    margin: 2px;
+    padding: 2px;
+    background: grey;
+    border-radius: 15px;
+}
+
+div.device_info {
+    padding: 2px;
+    display: block;
+
+}
+
+#defRadio {
+    background: red;
+}
+

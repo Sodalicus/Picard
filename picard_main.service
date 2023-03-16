@@ -1,0 +1,17 @@
+[Unit]
+Description = Picard main app 
+After = networking.target
+ 
+[Service]
+Type = simple
+WorkingDirectory= /var/lib/www/picard/
+ExecStart = /usr/bin/python3 /var/lib/www/picard/picard_main.py
+User = picard
+Group = picard
+Restart = on-failure
+#SyslogIdentifier = <Name of logs for the service>
+RestartSec = 5
+TimeoutStartSec = infinity
+ 
+[Install]
+WantedBy = multi-user.target

@@ -1,0 +1,117 @@
+{% extends "skeleton.html" %}
+{% block title%}Index{% endblock %}
+{% block content %}
+
+        <div id="mainbox">
+        <!-- 
+        {% for device in devices %}
+
+        {% if device['switchable'] == 'true' %}
+        <form action="/switch" method="POST">
+        <input type="hidden" name="dev_switch" value="{{ device['id'] }}" />
+        <button class="device_button" type="submit">{{ device['name'] }}</button>
+        </form>
+        {% endif %}
+        {% endfor %}
+        <br>
+        <br>
+
+        {% for device in devices %}
+        {% if device['switchable'] == 'false' %}
+        <div class="device_info">
+            {% if device['outside'] == 'false' %}
+            <img src="{{ url_for('static', filename='home.png') }}" width=16>
+            {% else %}
+            <img src="{{ url_for('static', filename='sun.png') }}" width=16>
+            {% endif %}
+
+            {% if device['unit'] == 'celsius' %}
+            <img src="{{ url_for('static', filename='thermo2.png') }}" width=16>
+            {% elif device['unit'] == 'percents' %}
+            <img src="{{ url_for('static', filename='drop.png') }}" width=16>
+            {% endif %}
+            {{ device['status'] }} 
+            {% autoescape false %}
+            {{ device['symbol'] }}
+            {% endautoescape %}
+
+
+        {% endif %}
+        {% endfor %}
+        
+        </div>
+        -->
+        <br>
+        <br>
+
+
+        <form action="/volumedown" method="POST">
+        <button class="device_button" type="submit">Volume-</button>
+        </form>
+        
+        <form action="/volumeup" method="POST">
+        <button class="device_button" type="submit">Volume+</button>
+        </form>
+
+        <br>
+        <br>
+
+        <form action="/play_radio_def" method="POST">
+        <button class="device_button" type="submit">Play default radio</button>
+        </form>
+        
+        <br>
+        <br>
+
+        <form action="/radio_stop" method="POST">
+        <button class="device_button" type="submit">Radio stop</button>
+        </form>
+
+        <br>
+        <br>
+
+        <form action="/motion_light" method="POST">
+        <button class="device_button" type="submit">Motion light</button>
+        </form>
+
+        <form action="/night_light" method="POST">
+        <button class="device_button" type="submit">Night light</button>
+        </form>
+        
+        <br>
+        <br>
+        Temperature: {{ tempDate[0] }}&#8451; read at {{ tempDate[1] }}. <br>
+        Now playing:<br>
+        name:  {{ nowPlaying[0] }}<br>
+        url:  {{ nowPlaying[1] }}<br>
+        Volume: {{ volume }} <br>
+
+        <br>
+        <p>
+        Default radio: {{ defRadio['name'] }} <br>
+        Defult radio url: {{ defRadio['url'] }} <br>
+        </p>
+        <form action="/radio_play" method="POST">
+            <select name = "dropdown">
+                {% for radio_name in radios %}
+                <option value = {{ radio_name }} >{{ radio_name }}</option>
+                {% endfor %}
+            </select>
+            <button class="device_button" type="submit">Play</button>
+        </form>
+        <!--
+        {% for column in devices %}
+        {{ column }} :
+        {% endfor %}
+        -->
+        <br />
+        <br />
+        {% for message in get_flashed_messages() %}
+        {{ message }}<br />
+        {% endfor %}
+    
+        </div>
+{% endblock %}
+
+
+

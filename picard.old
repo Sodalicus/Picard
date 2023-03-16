@@ -1,0 +1,209 @@
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+//Inside new DS18B20 with resistor sensor 0x28 0xFF 0x96 0x72 0x61 0x17 0x04 0x21
+//Inside DS18B20 sensor w/o R 0x28, 0xFF, 0xE7, 0x66, 0x61, 0x17, 0x04, 0xB7
+//Outside DS18B20 sensor 0x28, 0x76, 0xAC, 0x79, 0x97, 0x00, 0x03, 0xAD
+
+uint8_t sens_ins0[8] = { 0x28, 0xFF, 0xE7, 0x66, 0x61, 0x17, 0x04, 0xB7 };
+//uint8_t sens_out0[8] = { 0x28, 0x76, 0xAC, 0x79, 0x97, 0x00, 0x03, 0xAD };
+
+// number of sockets to control
+const byte numberOfDevs = 2;
+// array to hold current state of the device(socket)
+bool devStates[numberOfDevs] = {LOW, LOW};
+
+
+//### pins configuration
+// Pin for ds18b20 sesnors
+#define ONE_WIRE_BUS 2
+
+// Buzzer oin
+const int buzzer = 3;
+
+// Pin for night led and Pir
+// led1 - mosfet's base
+const int led1 = 4;
+const int led2 = 5;
+const int pir = 6;
+// array to setup pin numbers of the devices(sockets)
+byte devPin[numberOfDevs] = {12, 11};
+//### End of pins configuration
+
+
+// variable to hold incoming number from PC->USB
+int incByte = 0;
+
+// variables holding last sensors readings
+float temp_ins0 = 0.0;
+//float temp_out0 = 0.0;
+
+// variable to hold last time the sensors have been read
+int lastTempTime = 0;
+long timeRunning = 0; 
+
+
+bool led1On = false;
+unsigned long led1t0 = 0;
+unsigned long led1t1 = 0;
+bool motionLightOn = true;
+bool motionDetectionOn = true;
+bool motionDetected = false;
+
+unsigned long status_t0 = 0;
+unsigned long status_t1 = 0;
+
+const byte MAXIMUM_MESSAGE_LENGHT = 8; 
+
+
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+
+void setup() {
+    for (int i = 0; i < numberOfDevs; i++) {
+        pinMode(devPin[i], OUTPUT);
+        digitalWrite(devPin[i], devStates[i]);
+    }
+    
+    pinMode(pir, INPUT);
+    pinMode(led1, OUTPUT);
+
+
+    Serial.begin(9600);
+
+    delay(500);
+
+    lastTempTime = millis();
+    sensors.begin();
+}
+
+void loop() {
+    /*
+    while (Serial.available() > 0) {
+         char message[MAXIMUM_MESSAGE_LENGHT];
+         char messageIndex = 0;
+         byte inByte = Serial.read();
+         if (inByte !=";") {
+             Serial.print(inByte);
+             message[messageIndex] = inByte;
+             messageIndex++;    
+         } else {
+            message[messageIndex] = "\0";
+            Serial.print(";");
+            Serial.println(message);
+        }
+
+     }
+     */
+
+    if ((millis() - lastTempTime) > 2000) {
+    // if it's been over 2 seconds since last time we've read temperature from DS18B20, then read it and save reading time.
+        sensors.requestTemperatures();
+        temp_ins0 = sensors.getTempC(sens_ins0);
+        //temp_out0 = sensors.getTempC(sens_out0);
+        //lastTemp = sensors.getTempCByIndex(0);
+        lastTempTime = millis();
+    }
+    
+
+    if (led1On == true && motionLightOn == false) {
+        digitalWrite(led1, HIGH);
+    } else if (led1On == false && motionLightOn == false) {
+        digitalWrite(led1, LOW);
+    }
+
+    if (motionDetectionOn == true) {
+        if (digitalRead(pir) == HIGH && motionDetected == false) {
+            motionDetected = true;
+            //send motion detected to rasp
+            if (motionLightOn == true) {
+                digitalWrite(led1, HIGH);
+                led1t0 = millis();
+            }
+        }
+    }
+
+    if (digitalRead(pir) == LOW && motionLightOn == true) {
+        led1t1 = millis();
+        motionDetected = false; 
+        if (((led1t1 - led1t0) > 30000)) {
+            digitalWrite(led1, LOW);
+        }
+        }
+
+    if (motionLightOn == true) {
+        digitalWrite(led2, HIGH); 
+    } else {
+        digitalWrite(led2, LOW);
+    }
+
+    status_t1 = millis();
+    if ((status_t1 - status_t0) > 5000) {
+        status_t0 = millis();
+        status();
+    }
+
+
+    
+}
+/*
+void action() {
+        if ((incByte <= numberOfDevs) && (incByte >= 1)) {
+        // if its between 1-4, change the device variable and pin state, return status
+            devStates[incByte-1] = ! devStates[incByte-1]; 
+            digitalWrite(devPin[incByte-1], devStates[incByte-1]);
+            status();
+        } else if (incByte == 5) {
+        // play a tune and return current status
+            tone(buzzer, 1000, 100);
+            status();
+        } else if (incByte == 6) {
+        // just return status
+            status();
+        } else if (incByte == 7) {
+            motionLightOn = !motionLightOn;
+        } else if (incByte == 8)  {
+            led1On = !led1On;
+        } else {
+        // not a valid command, return error code.
+            //Serial.print("error;");
+            Serial.print(";");
+            Serial.print(incByte);
+            Serial.print(";");
+        }
+        
+    }
+*/
+
+
+
+void status() {
+// return current state of devs/sockets and last known sensors readings
+    timeRunning = millis()/60000;
+    Serial.print(";");
+    for (int i = 0; i < numberOfDevs; i++) {
+    // print to serial
+    // dev01:dev02:dev03:dev04:temp_ins0:temp_ins1:hum_ins1:temp_out0
+        Serial.print(devStates[i]);
+        Serial.print(":");
+    }
+    Serial.print(temp_ins0);
+        Serial.print(":");
+    //Serial.print(temp_out0);
+    //    Serial.print(":");
+    Serial.print(timeRunning);
+        Serial.print(":");
+    if (led1 == true) {
+        Serial.print("1");
+    } else {
+        Serial.print("0");
+    }
+        Serial.print(":");
+
+    if (digitalRead(pir) == HIGH) {
+        Serial.print("1"); 
+    } else {
+        Serial.print("0");
+    }
+        Serial.print(";");
+}
