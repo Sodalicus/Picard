@@ -60,7 +60,6 @@ def talk_to_ard(cmdIndex):
         return None
 
 def talk_to_ard2(cmd):
-    cmd = cmd.encode()
     ser = setup_serial()
     ser.write(cmd)
     ser.close()
