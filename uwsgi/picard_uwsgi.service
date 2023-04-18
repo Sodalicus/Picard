@@ -8,18 +8,19 @@ Wants=networking.target
 ExecStart=/usr/local/bin/uwsgi \
         --ini /etc/uwsgi/apps-available/picard_uwsgi.ini
 ExecStop=/usr/local/bin/uwsgi --stop /run/uwsgi/picard.pid
-User=picard
-Group=picard
+#Environment=
+User=piradio
+Group=piradio
 Restart=on-failure
 KillSignal=SIGQUIT
 Type=notify
 StandardError=syslog
 NotifyAccess=all
 
-WorkingDirectory=/var/lib/www/picard/
+WorkingDirectory=/home/piradio/picard
 LogsDirectory= uwsgi
 RuntimeDirectory= uwsgi
 
 [Install]
 WantedBy=multi-user.target
-Alias=picard_uwsgi.service
+Alias=picard_uwsgi

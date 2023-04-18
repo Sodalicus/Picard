@@ -1,0 +1,718 @@
+#! /bin/bash
+#
+# setup 
+# Copyright (C) 2022 Paweł Krzemiński 
+#
+# Distributed under terms of the MIT license.
+#
+#
+
+# This script is for checking wheter requirements for running picard correctly are set.
+# You can use it install missing system and python packages.
+# Managing systemd services. 
+##TODO
+# 1. general clean-up
+# 2. make return_ownership use stat instead of ls
+# 3. system section of autosetup
+# 4. systemd service for ir-keytable instead of rc.local?
+# 5. KISS gosh damn it, by over-complicating everything you've wasted lots of time
+
+username="$(whoami)"
+usergroup="$(whoami)"
+install_dir="$(pwd)"
+groups=("audio" "spi" "dialout" "input")
+
+p_main="/etc/systemd/system/picard_main.service"
+p_uwsgi="/etc/systemd/system/picard_uwsgi.service"
+uwsgi_ini="/etc/uwsgi/apps-available/picard_uwsgi.ini"
+
+# Are you running the script as a root
+if [ "$(id -u)" -eq 0 ]; then
+    echo "You're running script as a root, don't. sudo will be used when necessary."
+    exit 1
+fi
+
+question_yes_no () {
+# ask the question passed as an argument, expect [Yy] for yes and return/echo 0, 
+# [Nn] for no and return/echo 1
+    read -rp"$1" answer
+    while [[ ! "$answer" =~ [YyNn] ]];do
+        read -rp "$1" answer
+    done
+    if [[ "$answer" =~ [Yy] ]]; then
+        # answer yes - echo 0
+        echo 0
+    elif [[ "$answer" =~ [Nn] ]]; then
+        # answer no - echo 1
+        echo 1
+    fi
+}
+
+deactivate_venv() {
+    if [ "$(is_active_venv)" -eq 0 ]; then
+        deactivate
+        echo 0
+    else
+        echo 1
+    fi
+}
+
+
+check_groups() {
+# check whether current user belongs to groups (audio, spi, dialout, input) 
+# when run with append parameter, it will ask and add user to the groups if it's not already a member.
+    for gr in "${groups[@]}"; do
+        if id -nGz "$username"| grep -qzxF "$gr"; then
+            echo "user $username belongs to the group ${gr}."
+        else
+            echo "$username does not belong to the group ${gr}."
+            if [ "$1" = "append" ]; then
+                if [ "$(question_yes_no "Do you want to add $username to the group ${gr}?")" -eq 0 ]; then
+                    sudo usermod -aG "${gr}" "$username"
+                fi
+            fi
+        fi
+    done
+}
+
+change_user_group() {
+#settings
+# prompt for the username and the usergroup by which will be picard run.
+    local new_user=""
+    local new_usergroup=""
+    while ! awk -F: '{print $1}' /etc/passwd|grep -o "^$new_user$"; do
+        read -rp "Enter new user to run picard(leave empty to cancel): " new_user
+        if [ -z "$new_user" ]; then
+            break
+        fi
+    done
+    
+    if [ ! -z "$new_user" ]; then
+        username="$new_user"
+    fi
+
+    while ! awk -F: '{print $1}' /etc/group|grep -o "^$new_usergroup$"; do
+        read -rp "Enter new usergroup to run picard(leave empty to cancel): " new_usergroup
+        if [ -z "$new_usergroup" ]; then
+            break
+        fi
+    done
+    if [ ! -z "$new_usergroup" ]; then
+        usergroup="$new_usergroup"
+    fi
+}
+
+change_install_dir() {
+#settings
+# change the location to which configuration files point to.
+# location of all of the picard files that is, whatever you've pulled from git.
+    local new_install_dir=" "
+    read -rp "Enter new path for installation dir(leave empty to cancel): " new_install_dir
+
+    while true; do 
+        if  [ -d "$new_install_dir" ] && [ -n "$new_install_dir" ]; then
+            install_dir="$new_install_dir"
+            break
+        elif [ -z "$new_install_dir" ]; then
+            break
+        else
+            echo "Given directory doesn't exist: $new_install_dir"
+            read -rp "Enter new path for installation dir(leave empty to cancel): " new_install_dir
+        fi
+    done
+
+}
+
+
+
+are_service_files() {
+# status
+# Just print whether key important trio already exist or not.
+# print informative string
+    if [ -f "$p_main" ];then
+        echo "$p_main - exists"
+    else 
+        echo "$p_main - doesn't exist"
+    fi
+
+    if [ -f "$p_uwsgi" ];then
+        echo "$p_uwsgi - exists"
+    else 
+        echo "$p_uwsgi - doesn't exist"
+    fi
+
+    if [ -f "$uwsgi_ini" ];then
+        echo "$uwsgi_ini - exist"
+    else
+        echo "$uwsgi_ini - doesn't exists"
+    fi
+}
+
+view_service_files(){
+#maintenance
+#Simply view trio in system destination using less.
+    if [ -f "$p_main" ];then
+        less "$p_main"
+    fi
+
+    if [ -f "$p_uwsgi" ];then
+        less "$p_uwsgi"
+    fi
+
+    if [ -f "$uwsgi_ini" ];then
+        less "$uwsgi_ini"
+    fi
+}
+
+are_services_active() {
+#setup
+# check whether picard_main.service and picard_uwsgi.service systemd services are running.
+# return 0 or 1
+    if [ "$(systemctl is-active picard_main.service)" = "active" ] && [ "$(systemctl is-active picard_uwsgi.service)" = "active" ]; then
+        echo 0
+    else
+        echo 1
+    fi
+}
+
+are_services_enabled() {
+#setup
+# check whether picard_main.service and picard_uwsgi.service systemd are enabled(set to run at the boot)
+    if [ "$(systemctl is-enabled picard_main.service)" = "enabled" ] && [ "$(systemctl is-enabled picard_uwsgi.service)" = "enabled" ]; then
+        echo 0
+    else
+        echo 1
+    fi
+}
+
+
+start_services() {
+#setup
+# start picard_main.service and picard_uwsgi.service
+# return 0 or 1 
+    if sudo systemctl start picard_main.service && sudo systemctl start picard_uwsgi.service; then
+        echo 0
+    else
+        echo 1
+    fi
+}
+
+stop_services() {
+#setup
+# stop picard_main.service and picard_uwsgi.service
+# return 0 or 1 
+    if sudo systemctl stop picard_main.service && sudo systemctl stop picard_uwsgi.service; then
+        echo 0
+    else
+        echo 1
+    fi
+}
+
+enable_services() {
+#setup
+# enable picard_main.service and picard_uwsgi.service
+# return 0 or 1 
+    if sudo systemctl enable picard_main.service && sudo systemctl enable picard_uwsgi.service; then
+        echo 0
+    else
+        echo 1
+    fi
+}
+
+update_services() {
+#setup
+# update systemd after making changes to service files
+    if sudo systemctl daemon-reload; then
+        echo 0
+    else
+        echo 1
+    fi
+}
+
+prepare_services() {
+#setup
+# setup the required lines in service files for the current path and user(assuming those are the ones we will be using for running the services system wise.
+# exit script if a file is missing
+    if [ -f "./picard_main.service" ];then
+        sed -i "s|^WorkingDirectory.*$|WorkingDirectory=${install_dir}|" ./picard_main.service
+        sed -i "s|^ExecStart.*$|ExecStart=$(command -v python) ${install_dir}/picard_main.py|" ./picard_main.service
+        sed -i "s|^User.*$|User=$username|" ./picard_main.service
+        sed -i "s|^Group.*$|Group=$usergroup|" ./picard_main.service
+    else
+        echo "picard_main.service is missing. Aborting."
+        return 1
+    fi
+
+    if [ -f "./uwsgi/picard_uwsgi.service" ];then
+        sed -i "s|^User.*$|User=$username|" ./uwsgi/picard_uwsgi.service
+        sed -i "s|^Group.*$|Group=$usergroup|" ./uwsgi/picard_uwsgi.service
+        sed -i "s|^WorkingDirectory.*$|WorkingDirectory=${install_dir}|" ./uwsgi/picard_uwsgi.service
+    else 
+        echo "picard_uwsgi.service is missing. Aborting."
+        return 1 
+    fi
+
+    if [ -f "./uwsgi/picard_uwsgi.ini" ];then
+        sed -i "s|^chdir.*$|chdir=${install_dir}|" ./uwsgi/picard_uwsgi.ini
+        sed -i "s|^virtualenv.*$|virtualenv=${install_dir}/venv|" ./uwsgi/picard_uwsgi.ini
+        sed -i "s|^uid.*$|uid=$username|" ./uwsgi/picard_uwsgi.ini
+        sed -i "s|^gid.*$|gid=$usergroup|" ./uwsgi/picard_uwsgi.ini
+    else
+        echo "./uwsgi/picard_uwsgi.ini is missing. Aborting"
+        return 1
+    fi
+}
+
+copy_service_files() {
+#setup
+#  - copy .service and uwsgi configuration files to /etc/systemd/system
+# Does not check whether service is running, enabled, loaded etc.
+# yes, I know about cp -i
+    filename=("./picard_main.service" "./uwsgi/picard_uwsgi.service" "./uwsgi/picard_uwsgi.ini")
+    dst_path=("/etc/systemd/system/" "/etc/systemd/system/" "/etc/uwsgi/apps-available/")
+
+    for i in "${!filename[@]}"; do
+        echo "${dst_path[$i]}$(basename "${filename[$i]}")" 
+        if [ -f "${dst_path[$i]}$(basename "${filename[$i]}")" ]; then
+            if [ "$(question_yes_no "Do you want to overwrite $(basename "${filename[$i]}"): " )" -eq 0 ];then
+                echo "Overwriting old $(basename "${filename[$i]}")."
+            sudo cp "${filename[$i]}" "${dst_path[$i]}" 
+            else
+                echo "Keeping old $(basename "${filename[$i]}") file."
+            fi
+        else
+            echo "Coping $(basename "${filename[$i]}") file."
+            sudo cp "${filename[$i]}" "${dst_path[$i]}" 
+        fi
+    done
+}
+
+remove_service_files() {
+#uninstall
+# delete existing service files
+filename=("$p_main" "$p_uwsgi" "$uwsgi_ini")
+    for f in "${filename[@]}"; do
+        sudo rm -i "$f"
+    done
+}
+
+
+
+keep_old() {
+#maintenance
+# rename trio to *.old with s parameter, or back from *.old with r parameter
+    files=("$p_main" "$p_uwsgi" "$uwsgi_ini")
+
+    if [ "$1" = "s" ];then
+        echo "renaming files to *.old"
+        for f in "${files[@]}"; do
+            if [ -f "$f" ]; then
+                sudo mv "$f" "$f".old
+            fi
+        done
+    elif [ "$1" = "r" ];then
+        echo "renaming files from *.old"
+        for f in "${files[@]}"; do
+            if [ -f "$f" ]; then
+                sudo mv "$f".old "$f"
+            fi
+        done
+    fi
+}
+
+return_ownership() {
+#setup
+# find and return/echo owner, or a group of a given file/directory
+# return_ownership uses two positional arguments
+# $1 - u or g, for owner/user or group
+# $2 - path to directory or file
+    ug=""
+    if [ ! $# -eq 2 ];then
+        echo "return_ownership() requires two positional arguments"
+        exit 1
+    fi
+
+    if [ "$1" = "u" ];then
+        # 3rd column of ls -l output for awk
+        ug='$3'
+    elif [ "$1" = "g" ];then
+        # 4rd column of ls -l output for awk
+        ug='$4'
+    else
+        echo 1
+    fi
+
+    if [ -e "$2" ]; then
+        ls -l "$2"|awk -F" " "{print $ug}"
+    else
+        echo 1
+    fi
+}
+
+print_log_ownership() {
+#status
+# check ownership of log directory /var/log/uwsgi and log file uwsgi.log
+#return informative string
+    if [ -d "/var/log/uwsgi/" ]; then
+        echo -n "/var/log/uwsgi/ exists and belongs to: "
+        echo -n "$(return_ownership u "/var/log/uwsgi"):"
+        return_ownership g "/var/log/uwsgi" 
+    fi 
+
+    if [ -f "/var/log/uwsgi/uwsgi.log" ]; then
+        echo -n "/var/log/uwsgi/uwsgi.log exists and belongs to: "
+        echo -n "$(return_ownership u "/var/log/uwsgi/uwsgi.log"):"
+        return_ownership g "/var/log/uwsgi/uwsgi.log"
+    fi 
+}
+
+
+set_log_ownership() {
+#setup
+# make logs directory, if it doesn't exist. Change ownership if directory and file exist. 
+    # if it's not a directory or a file, probably means it doesn't exist.
+    # so make dir
+    if [ ! -d "/var/log/uwsgi" ] && [ ! -f "/var/log/uwsgi" ]; then
+        sudo mkdir /var/log/uwsgi
+    # if it's file, then something's mess up
+    elif [ -f "/var/log/uwsgi" ];then
+        echo " /var/log/uwsgi/ is a file, should be a directory."
+    # in the end, assuming it's directory, check who it belongs to
+    # if not to our guy, make him own it.
+    # I know we could just make him own it anyway, without checking, but where's the fun?
+    else [ ! "$(return_ownership u "/var/log/uwsgi")" = "$username" ] || [ ! "$(return_ownership g "/var/log/uwsgi")" = "$usergroup" ]
+        sudo chown "$username":"$usergroup" "/var/log/uwsgi" 
+        echo "Changing ownership of /var/log/uwsgi to $username:$usergroup."
+    fi
+    
+    # if the log file exists, check who it belongs to, and change ownership if needed.
+    # if it doesn't exist, it doesn't matter, uwsgi will make one on the first run.
+    if [ -f "/var/log/uwsgi/uwsgi.log" ];then
+        if [ ! "$(return_ownership u "/var/log/uwsgi/uwsgi.log")" = "$username" ] || [ ! "$(return_ownership g "/var/log/uwsgi/uwsgi.log")" = "$usergroup" ];then
+            sudo chown "$username":"$usergroup" "/var/log/uwsgi/uwsgi.log" 
+            echo "Changing ownership of /var/log/uwsgi/uwsgi.log to $username:$usergroup."
+        fi
+    fi
+
+}
+
+
+install_requirements() {
+#setup
+# install all required python modules into venv
+# if venv is active - install modules
+# else check if venv exists, if so activate it and install modules
+# if it doesn't - create it and activate and install modules
+    if [ "$(is_active_venv)" -eq 0 ]; then
+        pip3 install install -r ./requirements.txt
+    else 
+        if [ "$(existing_venv)" -eq 0 ]; then
+            activate_venv
+            install_requirements
+        else
+            create_venv
+            install_requirements
+        fi
+    fi
+}
+
+_status() {
+# display current setup
+    echo
+    echo "status:"
+    echo
+    echo "user: $username"
+    echo "group: $usergroup"
+    echo "install dir: $install_dir"
+    echo
+    check_groups
+    echo
+    print_log_ownership
+    echo
+    are_service_files
+    echo
+
+    if [ "$(are_services_active)" -eq 0 ];then
+        echo "Services picard_main and picard_uwsgi are active"
+    else 
+        echo "Services picard_main and picard_uwsgi are inactive"
+    fi
+
+    echo
+
+    if [ -d "./venv" ] && [ -f "./venv/bin/activate" ]; then
+        echo "Virtual environment exits in ./venv/"
+        if [  -v VIRTUAL_ENV ]; then
+            echo "Here would checking for pyhon modules be, but it works utterly slow."
+        else
+            source ./venv/bin/activate 
+            echo "Here would checking for pyhon modules be, but it works utterly slow."
+        fi
+    else 
+        echo "Virtual environment doesn't exist in ./venv/"
+    fi
+    echo
+    read -rp "Press enter to continue."
+}
+
+autosetup() {
+# setup all you can
+# what should this function do:
+# 1. check whether are there our services running already and stop them if so
+##venv
+# 1. check for venv
+# 1.a. create venv if it doesn't exist
+# 2. check if venv is active
+# 2.a. activate if it is not active
+# 3. install required modules 
+##end of venv
+##user
+# 1. check if $username belongs to $groups
+# 1.a. add him if he doesn't belong to
+##end of user
+##services
+# 1. check if services are running
+# 1.a. stop them, if they do
+# 2. rename old service files to *.old
+# 3. prepare new service files according to $install_dir, $username and $usergroup
+# 4. copy service files to the required locations
+# 5. check ownership of log dir/file
+# 5.a. set it to $username:$usergroup if necessary
+# 6. systemctl daemon-reload
+# 7. enable services
+# 8. start services
+##end of services
+##system
+# raspberry config for irda
+# ir-keytables setup
+##end of system
+
+
+    echo "## autosetup"
+    ##venv
+    # 1. check for venv
+    if [  -d "./venv" ] && [ -f "./venv/bin/activate" ]; then
+        echo "## venv already exist in ./venv"
+    else
+        echo "## venv doesn't exist."
+        echo -n "## creating venv.. "
+        # 1.a. create venv if it doesn't exist
+        if python3 -m venv venv; then
+            echo "OK"
+        else
+            echo "Failed"
+        fi
+    fi
+
+    # 2. check if venv is active
+    if [ !  -v VIRTUAL_ENV ]; then
+        # 2.a. activate if it is not active
+        echo "## venv is not active."
+        echo -n "## activating venv.. "
+        if source venv/bin/activate; then
+            echo "OK"
+        else
+            echo "Failed"
+        fi
+    fi
+
+    # 3. install required modules 
+    echo -n "## installing required modules.. "
+    if pip3 install install -r ./requirements.txt; then
+        echo "OK"
+    else
+        echo "Failed"
+    fi
+    ##end of venv
+
+    ##user
+    # 1. check if $username belongs to $groups
+    # 1.a. add him if he doesn't belong to
+    check_groups append
+    ##end of user
+
+    ##services
+    # checking services and stopping them
+    if [ "$(are_services_active)" -eq 0 ]; then
+        echo "## services are active."
+        echo -n "## stopping current services."
+        if [ "$(stop_services)" -eq 0 ]; then
+            echo "OK"
+        else
+            echo "Failed."
+            return 
+        fi
+    else
+        echo "## no services are active."
+    fi
+
+    echo "## checking onwership of logs dir/file" 
+    print_log_ownership
+
+    echo "## changing ownership of logs dir/file"
+    set_log_ownership
+
+    # checking for old service files, just informative
+    are_service_files
+
+    # renaming old service files to *.old if they exist
+    keep_old s
+
+    # preparing service files according to user/usergroup and install_dir
+    echo "## preparing service files."
+    prepare_services
+
+    # coping new service files, to required locations, asks to overwrite
+    echo "## coping service files."
+    copy_service_files
+
+    # since we've probably changed *.service files, better to reload systemctl
+    echo -n "## updating services(systemd).. "
+    if [ "$(update_services)" -eq 0 ]; then
+        echo "OK"
+    else
+        echo "Failed"
+    fi
+
+    # we want services to start with the system on boot
+    echo -n "## enabling services(systemd).. "
+    if [ "$(enable_services)" -eq 0 ]; then
+        echo "OK"
+    else
+        echo "Failed"
+    fi
+
+    # start services
+    echo -n "## starting services(systemd).. "
+    if [ "$(start_services)" -eq 0 ]; then
+        echo "OK"
+    else
+        echo "Failed"
+    fi
+    ##end of services
+}
+
+settings_menu() {
+    local choice=""
+    while [ ! "$choice" = "z" ]; do
+        clear
+        echo "Settings sub-menu: "
+        echo
+        echo "1) change user and group"
+        echo "2) change installation dir"
+        echo "z) go back"
+
+        read -rp "What is your choice: " choice
+
+        case $choice in
+            1) change_user_group;; 
+            2) change_install_dir;;
+            z) break;;
+        esac
+    done
+
+}
+
+
+services_menu() {
+    local choice=""
+    while [ ! "$choice" = "z" ]; do
+        #clear
+        echo
+        echo
+        echo "Services sub-menu: "
+        echo
+        echo "1) start services"
+        echo "2) stop services"
+        echo "3) view service files"
+        echo "4) update services"
+        echo "5) enable services"
+        echo "6) copy service files"
+        echo "7) remove service files"
+        echo "8) rename the trio to *.old"
+        echo "9) rename back the trio from *.old"
+        echo "z) go back"
+
+        read -rp "What is your choice: " choice
+
+        case $choice in 
+            1) start_services;;
+            2) stop_services;;
+            3) view_service_files;;
+            4) update_services;;
+            5) enable_services;;
+            6) copy_service_files;;
+            7) remove_service_files;;
+            8) keep_old s;;
+            9) keep_old r;;
+            z) break;;
+        esac
+    done
+}
+
+venv_menu () {
+    local choice=""
+
+    while [ ! "$choice" = "z" ]; do
+        echo
+        echo
+        echo "Venv sub-menu"
+        echo "1) create venv"
+        echo "2) install required modules"
+        echo "3) activate venv"
+        echo "4) deactivate venv"
+        echo "z) go back"
+
+        read -rp "What is your choice: " choice
+
+        case $choice in
+            1) python3 -m venv venv;;
+            2) pip3 install install -r ./requirements.txt;;
+            3) source ./venv/bin/activate;;
+            4) deactivate;;
+            5) break;;
+        esac
+    done
+}
+
+main() {
+    local choice=" "
+    while [ ! "$choice" = "z" ]; do
+        #clear
+
+        echo
+        echo
+        echo "Setting up for: "
+        echo "user: $username"
+        echo "group: $usergroup"
+        echo "install dir: $install_dir"
+        if [ -v VIRTUAL_ENV ]; then
+            echo "venv is active."
+        else
+            echo "venv is inactive."
+        fi
+        echo
+        
+        echo "0) status"
+        echo "1) setup"
+        echo "2) settings"
+        echo "3) services"
+        echo "4) venv"
+        echo "z) exit"
+
+        read -rp "What is your choice: " choice
+
+        case $choice in
+            0) clear;_status;;
+            1) autosetup;; 
+            2) settings_menu;;
+            3) services_menu;;
+            4) venv_menu;;
+            z) break;;
+        esac
+    done
+    echo "exit"
+    exit 0
+}
+
+main
