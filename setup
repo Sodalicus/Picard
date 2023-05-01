@@ -12,7 +12,7 @@
 # Managing systemd services. 
 ##TODO
 # 1. general clean-up
-# 2. make return_ownership use stat instead of ls
+# 2. make return_ownership use stat instead of ls - DONE
 # 3. system section of autosetup
 # 4. systemd service for ir-keytable instead of rc.local?
 # 5. KISS gosh damn it, by over-complicating everything you've wasted lots of time
@@ -25,6 +25,8 @@ groups=("audio" "spi" "dialout" "input")
 p_main="/etc/systemd/system/picard_main.service"
 p_uwsgi="/etc/systemd/system/picard_uwsgi.service"
 uwsgi_ini="/etc/uwsgi/apps-available/picard_uwsgi.ini"
+
+files=("$p_main" "$p_uwsgi" "$uwsgi_ini")
 
 # Are you running the script as a root
 if [ "$(id -u)" -eq 0 ]; then
@@ -44,15 +46,6 @@ question_yes_no () {
         echo 0
     elif [[ "$answer" =~ [Nn] ]]; then
         # answer no - echo 1
-        echo 1
-    fi
-}
-
-deactivate_venv() {
-    if [ "$(is_active_venv)" -eq 0 ]; then
-        deactivate
-        echo 0
-    else
         echo 1
     fi
 }
@@ -120,48 +113,29 @@ change_install_dir() {
             read -rp "Enter new path for installation dir(leave empty to cancel): " new_install_dir
         fi
     done
-
 }
-
-
 
 are_service_files() {
 # status
 # Just print whether key important trio already exist or not.
 # print informative string
-    if [ -f "$p_main" ];then
-        echo "$p_main - exists"
-    else 
-        echo "$p_main - doesn't exist"
-    fi
-
-    if [ -f "$p_uwsgi" ];then
-        echo "$p_uwsgi - exists"
-    else 
-        echo "$p_uwsgi - doesn't exist"
-    fi
-
-    if [ -f "$uwsgi_ini" ];then
-        echo "$uwsgi_ini - exist"
-    else
-        echo "$uwsgi_ini - doesn't exists"
-    fi
+    for f in "${files[@]}"; do
+        if [ -f "$f" ]; then
+            echo "${f} - exists"
+        else 
+            echo "${f} - doesn't exist"
+        fi
+    done
 }
 
 view_service_files(){
 #maintenance
 #Simply view trio in system destination using less.
-    if [ -f "$p_main" ];then
-        less "$p_main"
-    fi
-
-    if [ -f "$p_uwsgi" ];then
-        less "$p_uwsgi"
-    fi
-
-    if [ -f "$uwsgi_ini" ];then
-        less "$uwsgi_ini"
-    fi
+    for f in "${files[@]}"; do
+        if [ -f "${f}" ];then
+            less "${f}"
+        fi
+    done
 }
 
 are_services_active() {
@@ -290,19 +264,14 @@ copy_service_files() {
 remove_service_files() {
 #uninstall
 # delete existing service files
-filename=("$p_main" "$p_uwsgi" "$uwsgi_ini")
-    for f in "${filename[@]}"; do
+    for f in "${files[@]}"; do
         sudo rm -i "$f"
     done
 }
 
-
-
 keep_old() {
 #maintenance
 # rename trio to *.old with s parameter, or back from *.old with r parameter
-    files=("$p_main" "$p_uwsgi" "$uwsgi_ini")
-
     if [ "$1" = "s" ];then
         echo "renaming files to *.old"
         for f in "${files[@]}"; do
@@ -320,34 +289,6 @@ keep_old() {
     fi
 }
 
-return_ownership() {
-#setup
-# find and return/echo owner, or a group of a given file/directory
-# return_ownership uses two positional arguments
-# $1 - u or g, for owner/user or group
-# $2 - path to directory or file
-    ug=""
-    if [ ! $# -eq 2 ];then
-        echo "return_ownership() requires two positional arguments"
-        exit 1
-    fi
-
-    if [ "$1" = "u" ];then
-        # 3rd column of ls -l output for awk
-        ug='$3'
-    elif [ "$1" = "g" ];then
-        # 4rd column of ls -l output for awk
-        ug='$4'
-    else
-        echo 1
-    fi
-
-    if [ -e "$2" ]; then
-        ls -l "$2"|awk -F" " "{print $ug}"
-    else
-        echo 1
-    fi
-}
 
 print_log_ownership() {
 #status
@@ -355,17 +296,16 @@ print_log_ownership() {
 #return informative string
     if [ -d "/var/log/uwsgi/" ]; then
         echo -n "/var/log/uwsgi/ exists and belongs to: "
-        echo -n "$(return_ownership u "/var/log/uwsgi"):"
-        return_ownership g "/var/log/uwsgi" 
+        stat --printf="%U:" "/var/log/uwsgi"
+        stat --printf="%G\\n" "/var/log/uwsgi" 
     fi 
 
     if [ -f "/var/log/uwsgi/uwsgi.log" ]; then
         echo -n "/var/log/uwsgi/uwsgi.log exists and belongs to: "
-        echo -n "$(return_ownership u "/var/log/uwsgi/uwsgi.log"):"
-        return_ownership g "/var/log/uwsgi/uwsgi.log"
+        stat --printf="%U:" "/var/log/uwsgi/uwsgi.log"
+        stat --printf="%G\\n" "/var/log/uwsgi/uwsgi.log"
     fi 
 }
-
 
 set_log_ownership() {
 #setup
@@ -380,7 +320,7 @@ set_log_ownership() {
     # in the end, assuming it's directory, check who it belongs to
     # if not to our guy, make him own it.
     # I know we could just make him own it anyway, without checking, but where's the fun?
-    else [ ! "$(return_ownership u "/var/log/uwsgi")" = "$username" ] || [ ! "$(return_ownership g "/var/log/uwsgi")" = "$usergroup" ]
+    else [ ! "$(stat --printf="%U" "/var/log/uwsgi")" = "$username" ] || [ ! "$(stat --printf="%G" "/var/log/uwsgi")" = "$usergroup" ]
         sudo chown "$username":"$usergroup" "/var/log/uwsgi" 
         echo "Changing ownership of /var/log/uwsgi to $username:$usergroup."
     fi
@@ -388,32 +328,12 @@ set_log_ownership() {
     # if the log file exists, check who it belongs to, and change ownership if needed.
     # if it doesn't exist, it doesn't matter, uwsgi will make one on the first run.
     if [ -f "/var/log/uwsgi/uwsgi.log" ];then
-        if [ ! "$(return_ownership u "/var/log/uwsgi/uwsgi.log")" = "$username" ] || [ ! "$(return_ownership g "/var/log/uwsgi/uwsgi.log")" = "$usergroup" ];then
+        if [ ! "$(stat --printf="%U" "/var/log/uwsgi/uwsgi.log")" = "$username" ] || [ ! "$(stat --printf="%G" "/var/log/uwsgi/uwsgi.log")" = "$usergroup" ];then
             sudo chown "$username":"$usergroup" "/var/log/uwsgi/uwsgi.log" 
             echo "Changing ownership of /var/log/uwsgi/uwsgi.log to $username:$usergroup."
         fi
     fi
 
-}
-
-
-install_requirements() {
-#setup
-# install all required python modules into venv
-# if venv is active - install modules
-# else check if venv exists, if so activate it and install modules
-# if it doesn't - create it and activate and install modules
-    if [ "$(is_active_venv)" -eq 0 ]; then
-        pip3 install install -r ./requirements.txt
-    else 
-        if [ "$(existing_venv)" -eq 0 ]; then
-            activate_venv
-            install_requirements
-        else
-            create_venv
-            install_requirements
-        fi
-    fi
 }
 
 _status() {
@@ -612,7 +532,6 @@ settings_menu() {
     done
 
 }
-
 
 services_menu() {
     local choice=""
