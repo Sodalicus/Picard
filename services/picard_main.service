@@ -1,0 +1,17 @@
+[Unit]
+Description=Picard main app 
+After=networking.target
+ 
+[Service]
+Type=simple
+WorkingDirectory=/home/piradio/picard_testing
+ExecStart=/home/piradio/picard_testing/venv/bin/python /home/piradio/picard_testing/picard_main.py
+User=piradio
+Group=piradio
+Restart=on-failure
+#SyslogIdentifier=<Name of logs for the service>
+RestartSec=5
+TimeoutStartSec=infinity
+ 
+[Install]
+WantedBy=multi-user.target

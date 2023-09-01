@@ -5,13 +5,16 @@
  * Distributed under terms of the MIT license.
  */
 
+
+
 body {
-	background: lightgray;
+	background: DarkSlateGrey;
+    width: 500px;
     padding: 0px;
     padding-top: 50px;
     margin: 0px;
     font-size: 14px;
-    font-family: arial;
+    font-family: Arial, monospace;
 }    
 
 
@@ -53,8 +56,8 @@ li a:hover {
 }
 
 #mainbox {
-    background: white;
-    width: 600px;
+    background: DarkSlateGrey;
+    width: 400px;
     height: 600px;
     border: solid 1px black;
     margin-left: 20px;
@@ -80,9 +83,10 @@ li a:hover {
 button.device_button {
     float: left;
     margin: 2px;
-    padding: 2px;
-    background: grey;
-    border-radius: 15px;
+    padding: 6px;
+    background: LightGray;
+    color: DarkOliveGreen;
+    border-radius: 10px;
 }
 
 div.device_info {

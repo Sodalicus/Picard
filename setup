@@ -20,13 +20,23 @@
 username="$(whoami)"
 usergroup="$(whoami)"
 install_dir="$(pwd)"
+
 groups=("audio" "spi" "dialout" "input")
 
-p_main="/etc/systemd/system/picard_main.service"
-p_uwsgi="/etc/systemd/system/picard_uwsgi.service"
-uwsgi_ini="/etc/uwsgi/apps-available/picard_uwsgi.ini"
 
-files=("$p_main" "$p_uwsgi" "$uwsgi_ini")
+
+src_files=("./services/picard_main.service" \
+           "./services/uwsgi/picard_uwsgi.service" \
+           "./services/uwsgi/picard_uwsgi.ini" \
+           "./services/ir-keytable.service" )
+
+services_dst="/etc/systemd/system/"
+uwsgi_dst="/etc/uwsgi/apps-available/"
+
+dst_files=("/etc/systemd/system/picard_main.service" \
+           "/etc/systemd/system/picard_uwsgi.service" \
+           "/etc/uwsgi/apps-available/picard_uwsgi.ini" \
+           "/etc/systemd/system/ir-keytable.service" )
 
 # Are you running the script as a root
 if [ "$(id -u)" -eq 0 ]; then
@@ -117,9 +127,9 @@ change_install_dir() {
 
 are_service_files() {
 # status
-# Just print whether key important trio already exist or not.
+# Just print whether important filex already exist or not.
 # print informative string
-    for f in "${files[@]}"; do
+    for f in "${dst_files[@]}"; do
         if [ -f "$f" ]; then
             echo "${f} - exists"
         else 
@@ -130,13 +140,20 @@ are_service_files() {
 
 view_service_files(){
 #maintenance
-#Simply view trio in system destination using less.
-    for f in "${files[@]}"; do
+#Simply view files in system destination using less.
+    for f in "${dst_files[@]}"; do
         if [ -f "${f}" ];then
             less "${f}"
         fi
     done
 }
+
+#are_services_active() {
+#    for f in "${src_files[@]}"; do
+#        service="$(basename "$f")"
+#        if [ = "service" ]; then
+#
+#}
 
 are_services_active() {
 #setup
@@ -207,30 +224,30 @@ prepare_services() {
 #setup
 # setup the required lines in service files for the current path and user(assuming those are the ones we will be using for running the services system wise.
 # exit script if a file is missing
-    if [ -f "./picard_main.service" ];then
-        sed -i "s|^WorkingDirectory.*$|WorkingDirectory=${install_dir}|" ./picard_main.service
-        sed -i "s|^ExecStart.*$|ExecStart=$(command -v python) ${install_dir}/picard_main.py|" ./picard_main.service
-        sed -i "s|^User.*$|User=$username|" ./picard_main.service
-        sed -i "s|^Group.*$|Group=$usergroup|" ./picard_main.service
+    if [ -f "./services/picard_main.service" ];then
+        sed -i "s|^WorkingDirectory.*$|WorkingDirectory=${install_dir}|" ./services/picard_main.service
+        sed -i "s|^ExecStart.*$|ExecStart=$(command -v python) ${install_dir}/picard_main.py|" ./services/picard_main.service
+        sed -i "s|^User.*$|User=$username|" ./services/picard_main.service
+        sed -i "s|^Group.*$|Group=$usergroup|" ./services/picard_main.service
     else
         echo "picard_main.service is missing. Aborting."
         return 1
     fi
 
-    if [ -f "./uwsgi/picard_uwsgi.service" ];then
-        sed -i "s|^User.*$|User=$username|" ./uwsgi/picard_uwsgi.service
-        sed -i "s|^Group.*$|Group=$usergroup|" ./uwsgi/picard_uwsgi.service
-        sed -i "s|^WorkingDirectory.*$|WorkingDirectory=${install_dir}|" ./uwsgi/picard_uwsgi.service
+    if [ -f "./services/picard_uwsgi.service" ];then
+        sed -i "s|^User.*$|User=$username|" ./services/picard_uwsgi.service
+        sed -i "s|^Group.*$|Group=$usergroup|" ./services/picard_uwsgi.service
+        sed -i "s|^WorkingDirectory.*$|WorkingDirectory=${install_dir}|" ./services/picard_uwsgi.service
     else 
         echo "picard_uwsgi.service is missing. Aborting."
         return 1 
     fi
 
-    if [ -f "./uwsgi/picard_uwsgi.ini" ];then
-        sed -i "s|^chdir.*$|chdir=${install_dir}|" ./uwsgi/picard_uwsgi.ini
-        sed -i "s|^virtualenv.*$|virtualenv=${install_dir}/venv|" ./uwsgi/picard_uwsgi.ini
-        sed -i "s|^uid.*$|uid=$username|" ./uwsgi/picard_uwsgi.ini
-        sed -i "s|^gid.*$|gid=$usergroup|" ./uwsgi/picard_uwsgi.ini
+    if [ -f "./services/picard_uwsgi.ini" ];then
+        sed -i "s|^chdir.*$|chdir=${install_dir}|" ./services/picard_uwsgi.ini
+        sed -i "s|^virtualenv.*$|virtualenv=${install_dir}/venv|" ./services/picard_uwsgi.ini
+        sed -i "s|^uid.*$|uid=$username|" ./services/picard_uwsgi.ini
+        sed -i "s|^gid.*$|gid=$usergroup|" ./services/picard_uwsgi.ini
     else
         echo "./uwsgi/picard_uwsgi.ini is missing. Aborting"
         return 1
@@ -239,32 +256,28 @@ prepare_services() {
 
 copy_service_files() {
 #setup
-#  - copy .service and uwsgi configuration files to /etc/systemd/system
-# Does not check whether service is running, enabled, loaded etc.
-# yes, I know about cp -i
-    filename=("./picard_main.service" "./uwsgi/picard_uwsgi.service" "./uwsgi/picard_uwsgi.ini")
-    dst_path=("/etc/systemd/system/" "/etc/systemd/system/" "/etc/uwsgi/apps-available/")
+#  copy .service and uwsgi configuration files to $services_dst 
+#  copy .ini (the only one so far) to $uwsgi_dst
 
-    for i in "${!filename[@]}"; do
-        echo "${dst_path[$i]}$(basename "${filename[$i]}")" 
-        if [ -f "${dst_path[$i]}$(basename "${filename[$i]}")" ]; then
-            if [ "$(question_yes_no "Do you want to overwrite $(basename "${filename[$i]}"): " )" -eq 0 ];then
-                echo "Overwriting old $(basename "${filename[$i]}")."
-            sudo cp "${filename[$i]}" "${dst_path[$i]}" 
-            else
-                echo "Keeping old $(basename "${filename[$i]}") file."
-            fi
-        else
-            echo "Coping $(basename "${filename[$i]}") file."
-            sudo cp "${filename[$i]}" "${dst_path[$i]}" 
+    # iterate over the list of files
+    for f in "${src_files[@]}"; do
+        # get the file name
+        filename="$(basename "$f")"
+        # parameter expansion trick to get the file name suffix
+        if [ "${filename#*.}" = "service" ]; then
+            cp -i "$f" "${services_dst}""${$filename}"
+        elif [ "${filename#*.}" = "ini" ]; then
+            cp -i "$f" "${uwsgi_dst}""${filename}"
         fi
     done
+
 }
+
 
 remove_service_files() {
 #uninstall
 # delete existing service files
-    for f in "${files[@]}"; do
+    for f in "${dst_files[@]}"; do
         sudo rm -i "$f"
     done
 }
@@ -274,14 +287,14 @@ keep_old() {
 # rename trio to *.old with s parameter, or back from *.old with r parameter
     if [ "$1" = "s" ];then
         echo "renaming files to *.old"
-        for f in "${files[@]}"; do
+        for f in "${dst_files[@]}"; do
             if [ -f "$f" ]; then
                 sudo mv "$f" "$f".old
             fi
         done
     elif [ "$1" = "r" ];then
         echo "renaming files from *.old"
-        for f in "${files[@]}"; do
+        for f in "${dst_files[@]}"; do
             if [ -f "$f" ]; then
                 sudo mv "$f".old "$f"
             fi
@@ -403,6 +416,7 @@ autosetup() {
 # 8. start services
 ##end of services
 ##system
+# 1. check for ir-keytable
 # raspberry config for irda
 # ir-keytables setup
 ##end of system
@@ -510,6 +524,7 @@ autosetup() {
         echo "Failed"
     fi
     ##end of services
+    
 }
 
 settings_menu() {

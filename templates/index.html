@@ -44,6 +44,10 @@
         <br>
         <br>
 
+        <p> TESTING </p>
+        <label for="volume">Volume(0-100)</label>
+        <span id="volume_text">{{ volume }}</span>
+        <input type="range" onchange="sendVolume()" id="volume" name="volume" min=0 max=100 step=5 value={{ volume }}<br>
 
         <form action="/volumedown" method="POST">
         <button class="device_button" type="submit">Volume-</button>

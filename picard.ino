@@ -96,7 +96,7 @@ void loop() {
 
     if (digitalRead(pir) == LOW && motionLightOn == true) {
         motionDetected = false; 
-        if (((millis() - led1t0) > 30000)) {
+        if (((millis() - led1t0) > 60000)) {
             digitalWrite(led1, LOW);
         }
         }

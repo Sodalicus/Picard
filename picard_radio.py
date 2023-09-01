@@ -40,6 +40,7 @@ class Radio:
                 self.player.play()
                 self.nowPlaying = source, name
                 update_now_playing((name,source))
+                self.player.audio_set_volume(40)
                 update_volume(self.return_volume())
         else:
             self.player.stop()

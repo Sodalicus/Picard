@@ -1,0 +1,9 @@
+[Unit]
+Description=Ir-keytable setup
+
+[Service]
+Type=oneshot
+ExerStart=/usr/bin/ir-keytable -p nec
+
+[Install]
+WantedBy=multi-user.target

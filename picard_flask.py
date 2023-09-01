@@ -13,6 +13,7 @@
 from flask import Flask, g
 from flask import render_template, request, redirect, url_for, flash
 from flask import session
+from flask import jsonify
 import os
 import sqlite3
 from picard_client import send
@@ -187,6 +188,14 @@ def volume_down():
     #vol = player.return_volume()
     #display.msg("Vol "+str(vol))
     return redirect(url_for("index"))
+
+@app.route('/set_volume', methods=['POST'])
+def set_volume():
+    if request.method == 'POST':
+        volume = request.get_json()
+        print(volume)
+        return jsonify(volume)
+
 
 @app.route('/update_radios', methods=['POST'])
 def update_radios():
