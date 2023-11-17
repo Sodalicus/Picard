@@ -2,23 +2,16 @@
 {% block content %}
     <div id="mainbox">
     <h1> Edit radio streaming urls </h1>
-    <label>Name, url, default</label>
+    <p>[ Name ] [ url ]</p>
     <form action="/update_radios" method="POST">
-    {% for radio in radios.values() %}
-        <form action="submit" method="POST">
+    {% for id in range(0,9) %}
         <p> 
-        {{ radio['id'] }}.
-        <input id="radioId" type="text" name="radioId{{ radio['id'] }}" value={{ radio['id'] }} hidden="True" readonly="True" />  
-        <input id="radioName" type = "text" name = "radioName{{ radio['id'] }}" value={{ radio['name'] }} />
-        <input id="radioUrl" type = "text" name = "radioUrl{{ radio['id'] }}" value={{ radio['url'] }} />
-        {% if radio['defRadio'] == True %}
-            <input type = "radio" name = "radioDef" value={{ radio['id'] }} checked="True"/>
-            {% else %}
-            <input type = "radio" name = "radioDef" value={{radio['id']}} />
-        {% endif %}
+        {{ id }}.
+        <input class="set_input_text" id="radioName" type="text" name="radioName" value="{% if radios[id] %}{{ radios[id]['name'] }}{% endif %}"/>
+        <input class="set_input_text" id="radioUrl" type="text" name="radioUrl" value="{% if radios[id] %}{{ radios[id]['url'] }}{% endif %}" />
         </p>
     {% endfor %}
-    <button class="device_button" type="submit">Update</button>
+    <button class="general_button" type="submit">Update</button>
     </form>
     </div>
 {% endblock %}

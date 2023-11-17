@@ -26,7 +26,7 @@ ffmpeg -ac 1 -f alsa -i hw:1 -f v4l2 -video_size 640x480 -i /dev/video0 public/t
 import selectors # for reading irDa and sockets
 import socket
 from picard_radio import Radio
-from picard_base import get_radios, get_def_radio, get_recent_temp
+from picard_base import get_recent_temp, select_radio
 from picard_serial import setup_serial, SerialConnection, talk_to_ard2
 from picard_lib import load_config
 import time
@@ -54,11 +54,7 @@ if SETTINGS["USE_IRDA"] == "True":
         selector.register(irda, selectors.EVENT_READ, data="remote")
 
 
-
-
 radio = Radio()
-radios = get_radios()
-
 
 #Setup socket input - for client program
 lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -86,89 +82,109 @@ def service_connection(key):
     conn = key.fileobj
     data = key.data
     recvData = conn.recv(1024)
-    print("recvData", recvData)
     data.inBuf += recvData
     if len(data.inBuf) >= 8:
         print("data.inBuf >= 8")
         print("data.inBuf=", data.inBuf)
-        value = data.inBuf.decode('ascii')
-        front_control(value)
+        command = data.inBuf.decode('ascii')
+        control(command)
         selector.unregister(conn)
         conn.close()
 
-
-def front_control(value):
-    """Value is a data from the client received by the socket"""
-    actions = ["radio_01",\
-               "radio_02",\
-               "radio_03",\
-               "radio_04",\
-               "radio_05",\
-               "radio_06",\
-               "radio_07",\
-               "radio_08",\
-               "radio_09",\
-               "radio_def",\
-               "radio_stop",\
-               "volume_up",\
-               "volume_down",\
-               "motion_light",\
-               "night_light",\
-               "exit"]
-    if value in actions:
-        control(value)
-
-
-def remote_control(value):
     """value is a code received from remote control"""
+def remote_control(value):
 
-    actions = {12 : "radio_01",\
-               24 : "radio_02",\
-               94 : "radio_03",\
-               8  : "radio_04",\
-               28 : "radio_05",\
-               90 : "radio_06",\
-               66 : "radio_07",\
-               82 : "radio_08",\
-               74 : "radio_09",\
-               67 : "radio_def",\
-               9  : "radio_stop",\
-               7  : "volume_down",\
-               21 : "volume_up",\
+    actions = {12 : "channel 1",\
+               24 : "channel 2",\
+               94 : "channel 3",\
+               8  : "channel 4",\
+               28 : "channel 5",\
+               90 : "channel 6",\
+               66 : "channel 7",\
+               82 : "channel 8",\
+               74 : "channel 9",\
+               9  : "radio stop",\
+               7  : "volume -",\
+               21 : "volume +",\
+               25 : "lamp motion",\
+               13 : "lamp turn", \
                70 : "temperature",\
                74 : "exit"}
     if value in actions.keys():
         control(actions[value])
-        #sys.exit()
 
-def control(value):
-    if value == "volume_up":
-        print("volume up")
-        radio.volume_up()
-        display.msg(str(radio.return_volume()))
-    elif value == "volume_down":
-        print("volume down")
-        radio.volume_down()
-        display.msg(str(radio.return_volume()))
-    elif value == "radio_def":
-        radioDef = get_def_radio()
-        if radioDef != None:
-            radio.play(radioDef['url'],radioDef['name'])
-    elif value == "radio_stop":
-        radio.stop()
-    elif value in get_radios():
-        radio.play(radios[value]['url'],radios[value]['name'])
-        display.msg(radios[value]['name'])
-    elif value == "temperature":
-        display.msg(get_recent_temp()[0])
-    elif value == "motion_light":
-        talk_to_ard2(b'x\n')
-    elif value == "night_lamp":
-        talk_to_ard2(b'y\n')
-    elif value == "exit":
-        sys.exit()
+def control(command):
+    print("command: {}".format(command))
+    """ accepts string space seperated 'action value'"""
+    command = command.split()
+    print("command: {}".format(command))
+
+    if len(command) == 2:
+        """ double word commands """
+
+        if command[0] == "volume":
+            """ Volume manipulation """
+            if command[1] == "+":
+                print("volume up")
+                radio.volume_up()
+                display.msg(str(radio.return_volume()))
+            elif command[1] == "-":
+                print("volume down")
+                radio.volume_down()
+                display.msg(str(radio.return_volume()))
+            else:
+                try:
+                    volume = int(command[1])
+                    radio.volume_set(volume)
+
+                except ValueError:
+                    print("Incorrect volume, not an integer.")
+
+        if command[0] == "channel":
+            """ Channel manipulation """
+            if command[1] == "default":
+                pass
+            elif command[1] == "+":
+            # channel up
+                pass
+            elif command[1] == "-":
+            # channel down
+                pass
+            else:
+                try:
+                    number = int(command[1])
+                    radio_channel = select_radio(number)
+                    if radio_channel != None:
+                        radio.play(radio_channel['url'], radio_channel['name'])
+
+                    print("Selected channel number {0}, name {1}, source {2}".format(command[1],\
+                            radio_channel['name'], radio_channel['url']))
+                except ValueError:
+                    print("Incorrect channel number, not an integer.")
+
+
+
+        if command[0] == "lamp":
+            """ lamp control """
+            if command[1] == "motion":
+                talk_to_ard2(b'x\n')
+            elif command[1] == "turn":
+                talk_to_ard2(b'y\n')
+
+        if command[0] == "radio":
+            """ Radio object manipulation """
+            if command[1] == "stop":
+                radio.stop()
+
+    elif len(command) == 1:
+        """ single word commands """
+        if command[0] == "temperature":
+           display.msg(get_recent_temp()[0])
+        elif command[0] == "exit":
+            sys.exit()
     else:
-        pass
+        print("Unknown command {}".format(command))
+
 
 
 print("Starting picard...")

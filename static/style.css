@@ -5,18 +5,15 @@
  * Distributed under terms of the MIT license.
  */
 
-
-
 body {
-	background: DarkSlateGrey;
-    width: 500px;
+	background: SlateGrey;
     padding: 0px;
     padding-top: 50px;
+    padding-bottom: 50px;
     margin: 0px;
     font-size: 14px;
-    font-family: Arial, monospace;
+    font-family: Arial;
 }    
-
 
 button {
     padding: 0px;
@@ -25,77 +22,111 @@ button {
     font-family: arial;
 }
 
-
-ul {
+/* Top horizontal navigation bar */
+.navbar {
     background: grey;
     position: fixed;
-    overflow: hidden;
     top: 0;
     width: 100%;
     list-style-type: none;
     display: inline-block;
     margin: 0; 
     padding: 0;
-    overflow: hidden;
 }
 
-li {
+.nav_button {
+    display: inline-block;
     float: left;
 }
 
-li a {
+.nav_button a {
   display: block;
   color: white;
   text-align: center;
   padding: 14px 16px;
-  text-decoration: none;
+  text-decoration: none;}
+
+.nav_button a:hover {background-color: #111;}
+
+.dropdown_menu {
+    overflow: scroll;
+    position: absolute;
+    display: none;
+    padding: 0px;
+    z-index: 1;
 }
 
-li a:hover {
-  background-color: #111;
+
+.dropdown_menu .dropdown_button {
+    display: block;
+    float: left;
+    margin: 4px;
+    padding: 4px;
+    width: 60px;
+    height: 60px;
+    background-color: Gray;
+}
+
+.dropdown_button_container {
+    height: 70px;
+    width: auto;
+    padding: 2px;
+}
+
+.dropdown_button:hover {
+    background-color: #111;
+    color: white;
+}
+
+.radio_name {
+    clear: left;
+    display: inline-block;
+    background:rgb(255, 255, 219) ;
+    padding: 5px;
+    border: 2px solid brown;
+    border-radius: 5px;
+}
+
+.nav_button:hover .dropdown_menu {
+    display: block;
+    overflow: visible;
+    background-color: green;
+}
+
+.general_button {
+    display: block;
+    float: left;
+    margin: 4px;
+    padding: 4px;
+    width: 60px;
+    height: 60px;
+    background-color: Gray;
+}
+
+.set_input_text {
+    width: 300px;
 }
 
 #mainbox {
     background: DarkSlateGrey;
-    width: 400px;
-    height: 600px;
+    min-width: 80%;
+    height: 800px;
     border: solid 1px black;
-    margin-left: 20px;
+    padding: 10px;
+    margin: 20px 5%;}
+
+#general_button_container {
+    border: 1px black solid;
+    height: 80px;
+    width: auto;
 }
 
-#mainbox_temp {
-    width: 700;
-    border: solid 1px black;
-    margin-left: 20px;
-    padding-left: 20px;
+#info {
+    border: 1px solid black;
 }
 
-#RadioName {
-    width: 100px;
-    margin-left: 5px;
+#select_channel {
+    clear: left;
 }
 
-#RadioUrl {
-    width: 400px;
-}
-
-
-button.device_button {
-    float: left;
-    margin: 2px;
-    padding: 6px;
-    background: LightGray;
-    color: DarkOliveGreen;
-    border-radius: 10px;
-}
-
-div.device_info {
-    padding: 2px;
-    display: block;
-
-}
-
-#defRadio {
-    background: red;
-}
 

@@ -10,7 +10,7 @@
 <html>
 	<head>
         <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{% block title %}{% endblock %} - Picard</title>
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
         <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}"/>
@@ -19,14 +19,33 @@
         {% endblock %}
 	</head>
 	<body>
-            <ul>
-                <li><a href="/">Controls</a></li>
-                <li><a href="#menu02">Temp Graph</a></li>
-                <li><a href="/settings">Settings</a></li>
-                <li><a href="#menu03">About</a></li>
-            </ul>
-            </br>
+            <div class="navbar">
+                <div class="nav_button">
+                <a href="#xxx">Channels</a>
+                    <div class="dropdown_menu">
+                    <div id="wrapper">
+                        {% for radio in radios %}
+                        <div class="dropdown_button_container">
+                            <button id="channel {{ radio["id"] }}" class="dropdown_button" onclick="playChannel2(this)">#{{ radio["id"] }}</button>
+                        <div class="radio_name">
+                            {{ radio["name"] }}
+                        </div>
+                        </div>
+                        </ br>
+                        {% endfor %}
+                    </div>
+                    </div>
+                </div>
+                <div class="nav_button"><a href="/">Controls</a></div>
+                <div class="nav_button">
+                    <a href="#menu02">Temp Graph</a>
+                </div>
+                <div class="nav_button"><a href="/settings">Settings</a></div>
+                <div class="nav_button"><a href="#menu03">About</a></div>
+            </div>
         {% block content %}{% endblock %}
+
+        <script src="{{ url_for('static', filename='picard.js') }}"></script>
 	</body>
 </html>
 

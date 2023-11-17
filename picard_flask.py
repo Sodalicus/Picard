@@ -17,7 +17,7 @@ from flask import jsonify
 import os
 import sqlite3
 from picard_client import send
-from picard_base import get_radios, save_radios, get_def_radio, get_recent_temp, get_now_playing
+from picard_base import get_radios2, save_radios, get_recent_temp, get_now_playing
 from picard_base import get_volume
 from picard_lib import load_config
 
@@ -48,84 +48,14 @@ def close_db(error):
     if g.get('db'):
         g.db.close()
 
-
-def retrive_data():
-    """Get most recent reading from database"""
-    cur = get_db().cursor()
-    sqlQuery = "SELECT * FROM reading ORDER BY time_added ASC;"
-    return results
-
-
-def read_devices_info():
-    """Read device info (name, type, switchability, description)
-       from table device"""
-    cur = get_db().cursor()
-    sqlQuery = "SELECT * FROM device;"
-    cur.execute(sqlQuery)
-    results = cur.fetchall()
-    devices = []
-    for row in results:
-        devices.append(dict((cur.description[idx][0], value)
-                for idx, value in enumerate(row)))
-    return devices
-
-def get_radios_names():
-    radios = get_radios()
-    namesList = []
-    if radios == None: return None
-    for radio in radios.values():
-        if not (radio['name']) == None:
-            namesList.append(radio['name'])
-    return namesList
-
-def get_channel_number(name):
-    radios = get_radios()
-    for radio in radios.items():
-        if (radio[1]['name']) == name:
-            return(radio[0])
-    return None
-
-
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    """
-    devices = read_devices_info()
-    status = retrive_data()
-    if status == None:
-        status = [0]*11
-    for device in devices:
-        device['status'] = status[device['id']]
-        if device['unit'] == "celsius":
-            device['symbol'] = "&#8451;"
-        elif device['unit'] == "percents":
-            device['symbol'] = "%"
-        elif device['unit'] == "minutes":
-            device['symbol'] = "&prime;"
-        else:
-            device['symbol'] = None
-    mostRecent = status[10]
-    #flash('Status: {}'.format(status))
-    nowPlaying = player.now_playing()
-    nowPlaying = "crap"
-    #volume = player.return_volume()
-    volume = "10"
-    return render_template('index.html',\
-            devices = devices,\
-            mostRecent = mostRecent,\
-            nowPlaying = nowPlaying,\
-            volume = volume)
-    """
-    defRadio = get_def_radio()
     tempDate = get_recent_temp()
-    radios = get_radios_names()
+    radios = get_radios2()
 
     nowPlaying = get_now_playing()
     volume = get_volume()
-    if defRadio == None:
-        defRadio = {'name' : 'No default radio selected', 'url' : '---'}
     return render_template('index.html',\
-            defRadio = defRadio,\
             tempDate = tempDate,\
             radios = radios,\
             nowPlaying = nowPlaying,\
@@ -133,57 +63,34 @@ def index():
 
 @app.route('/settings', methods=['GET'])
 def settings():
-    radios = get_radios()
-    print('settings')
-    print(radios)
+    radios = get_radios2()
     return render_template('settings.html',\
             radios = radios)
 
 @app.route('/switch', methods=["POST"])
 def switch():
     devNumber = int(request.form['dev_switch'])
-    #talk_to_ard(devNumber-1)
-    #flash('Clicked: {}'.format(devNumber))
     return redirect(url_for("index"))
     return render_template('index.html')
-
-
-@app.route('/play_radio_def', methods=["POST"])
-def play_radio_def():
-    """Play default radio"""
-    send("radio_def", SSOCKET)
-    #player.play("radio")
-    #display.msg("radio")
-    return redirect(url_for("index"))
 
 @app.route('/radio_stop', methods=["POST"])
 def stop_radio():
     """Stop playing radio"""
-    send("radio_stop", SSOCKET)
-    #player.play("radio")
-    #display.msg("radio")
+    send("radio stop", SSOCKET)
     return redirect(url_for("index"))
-
-@app.route('/noise', methods=["POST"])
-def play_noise():
-    #player.play("noise")
-    #display.msg("noise")
-    return redirect(url_for("index"))
-
 
 @app.route('/beep', methods=['POST'])
 def beep():
-    #talk_to_ard(4)
     return redirect(url_for("index"))
 
 @app.route('/volumeup', methods=['POST'])
 def volume_up():
-    send("volume_up", SSOCKET)
+    send("volume +", SSOCKET)
     return redirect(url_for("index"))
 
 @app.route('/volumedown', methods=['POST'])
 def volume_down():
-    send("volume_down", SSOCKET)
+    send("volume -", SSOCKET)
     #player.volume_down()
     #vol = player.return_volume()
     #display.msg("Vol "+str(vol))
@@ -193,47 +100,74 @@ def volume_down():
 def set_volume():
     if request.method == 'POST':
         volume = request.get_json()
-        print(volume)
-        return jsonify(volume)
+        send("volume {}".format(volume), SSOCKET)
+        return(jsonify("response:volume:"+str(volume)))
 
+@app.route('/message', methods=['POST', 'GET'])
+def message():
+    #msg = request.get_json()
+    msg = request.content_type
+    return(jsonify("OK"))
 
 @app.route('/update_radios', methods=['POST'])
 def update_radios():
     """Read the form from settings.html and update database accordingly."""
     if request.method == "POST":
         formData = request.form
-        radioDef = int(request.form.get("radioDef"))
+        radioNames = formData.getlist("radioName")
+        radioUrls = formData.getlist("radioUrl")
         radios = []
-        for i in range(1, 11):
-            radios.append( { 'id' :formData['radioId'+str(i)],\
-                             'name' : formData['radioName'+str(i)],\
-                             'url' : formData['radioUrl'+str(i)],\
-                             'defRadio' : (True if radioDef == i else False)} )
+        for i in range(0, 9):
+            radios.append( { 'id' : str(i+1),\
+                             'name' : radioNames[i],\
+                             'url' : radioUrls[i] })
         save_radios(radios)
         return redirect(url_for("settings"))
 
-@app.route('/radio_play', methods=['POST'])
-def radio_play():
+@app.route('/play_channel', methods=['POST'])
+def play_channel():
     """get radio name from the drop-down input and play it."""
+    type = None
     if request.method == "POST":
-        formData = request.form
-        radioName =  formData['dropdown']
-        radioChannel = get_channel_number(radioName)
-        send(radioChannel, SSOCKET)
-    return redirect(url_for("index"))
+        if request.is_json == True:
+            """ request sent by js button 'Content-type: application/json' """
+            type = "json"
+            req = request.json.split()
+            if len(req) == 2:
+                radioChannel = req[1]
+
+        else:
+            """ request sent by <form> """
+            type = "form"
+            formData = request.form
+            radioChannel =  formData['channel']
+
+        try:
+            """check if radioChannel is and int and lower than 200"""
+            radioChannel = int(radioChannel)
+            if radioChannel <= 200:
+                radioChannel = "channel "+str(radioChannel)
+                send(radioChannel, SSOCKET)
+        except ValueError:
+            print("Not a valid channel number, must be an int.")
+        if type == "json":
+            return jsonify("response::"+radioChannel)
+        elif type == "form":
+            return redirect(url_for("index"))
+
 
 @app.route('/motion_light', methods=['POST'])
 def motion_light():
     """make main app tell arduino to switch the state of the motion light."""
     if request.method == "POST":
-        send("motion_light", SSOCKET)
+        send("lamp motion", SSOCKET)
     return redirect(url_for("index"))
 
 @app.route('/night_light', methods=['POST'])
 def night_light():
     """make main app tell arduino to switch the state of the night light."""
     if request.method == "POST":
-        send("night_light", SSOCKET)
+        send("lamp turn", SSOCKET)
     return redirect(url_for("index"))
 
 if __name__ == '__main__':

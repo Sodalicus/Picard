@@ -26,8 +26,8 @@ groups=("audio" "spi" "dialout" "input")
 
 
 src_files=("./services/picard_main.service" \
-           "./services/uwsgi/picard_uwsgi.service" \
-           "./services/uwsgi/picard_uwsgi.ini" \
+           "./services/picard_uwsgi.service" \
+           "./services/picard_uwsgi.ini" \
            "./services/ir-keytable.service" )
 
 services_dst="/etc/systemd/system/"
@@ -265,9 +265,9 @@ copy_service_files() {
         filename="$(basename "$f")"
         # parameter expansion trick to get the file name suffix
         if [ "${filename#*.}" = "service" ]; then
-            cp -i "$f" "${services_dst}""${$filename}"
+            sudo cp -i "$f" "${services_dst}""${filename}"
         elif [ "${filename#*.}" = "ini" ]; then
-            cp -i "$f" "${uwsgi_dst}""${filename}"
+            sudo cp -i "$f" "${uwsgi_dst}""${filename}"
         fi
     done
 
@@ -279,7 +279,7 @@ remove_service_files() {
 # delete existing service files
     for f in "${dst_files[@]}"; do
         sudo rm -i "$f"
-    done
+   done
 }
 
 keep_old() {

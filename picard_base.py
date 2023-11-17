@@ -15,18 +15,15 @@ from picard_lib import load_config
 SETTINGS = load_config()
 DBFILE = SETTINGS["DBFILE_PATH"]+SETTINGS["DBFILE"]
 
+# default radios to fill an empty database.
 DEF_RADIOS = [{ 'id': 1, 'name' : "chilldeep",\
-        'url' :  "https://ch02.cdn.eurozet.pl/CHIDEP.mp3",\
-        'defRadio' : False },
+        'url' :  "https://ch02.cdn.eurozet.pl/CHIDEP.mp3",},\
         { 'id' : 2, 'name' : "antyradio",\
-        'url' :"http://an01.cdn.eurozet.pl/ant-waw.mp3",\
-        'defRadio' : True },
+        'url' :"http://an01.cdn.eurozet.pl/ant-waw.mp3",},\
         { 'id' : 3, 'name' : "eskarock",\
-        'url' : "http://waw01-02.ic.smcdn.pl:8000/5380-1.aac.m3u",\
-        'defRadio' : False },
+        'url' : "http://waw01-02.ic.smcdn.pl:8000/5380-1.aac.m3u",},\
         { 'id' : 4, 'name' : "radioOrbit",\
-        'url' : "https://s1.slotex.pl/shoutcast/7390/stream#.mp3",\
-        'defRadio' : False }]
+        'url' : "https://s1.slotex.pl/shoutcast/7390/stream#.mp3",}]
 
 DEF_SENSORS = [{ 'name' : "DS18B20", 'location' : "Inside",\
         'unit' : "Celsius" }]
@@ -50,10 +47,11 @@ def create_empty_db():
         cur.execute("""CREATE TABLE IF NOT EXISTS radios (
                      id INTEGER PRIMARY KEY ASC,
                      name VARCHAR(256) DEFAULT NULL,
-                     url VARCHAR(256) DEFAULT NULL,
-                     defRadio BOOLEAN DEFAULT FALSE);""")
+                     url VARCHAR(256) DEFAULT NULL);""")
+        """
         for i in range(1,11):
             cur.execute("INSERT INTO radios default VALUES;")
+            """
 
         cur.execute("DROP TABLE IF EXISTS sensors;")
         cur.execute("""CREATE TABLE IF NOT EXISTS sensors (
@@ -93,7 +91,6 @@ def get_volume():
         data = cur.fetchone()
         if data == None: return None
         volume = data['volume']
-        print("x: {}".format(volume))
         return volume
 
 def update_now_playing(nowPlaying):
@@ -139,57 +136,38 @@ def get_recent_temp():
         timestamp = tempDate['timestamp']
         return temp,timestamp
 
-
-
-def get_radios():
+def get_radios2():
+    """ Retrive all radios from DB and return them as a list of dictionaries """
     with DBase() as cur:
-        cur.execute("SELECT * FROM radios LIMIT 10")
-        radios = cur.fetchall()
-        radiosDict = {}
-        radioNumber = 1
-        if len(radios) == 0: return None
-        for radio in radios:
-            radioDict = { 'id': radio['id'], 'name' : radio['name']\
-                    , 'url' : radio['url'], 'defRadio' : radio['defRadio'] }
-            radiosDict['radio_0'+str(radioNumber) if radioNumber < 10 else 'radio_10'] = radioDict
-            radioNumber += 1
-        return radiosDict
+        cur.execute("SELECT * FROM radios;")
+        radios = []
+        for row in cur:
+            radios.append({'id' : row['id'], 'name' : row['name'], "url" : row['url']})
+    return radios
 
-
-def get_def_radio():
-    """Return dictionary of name and url of default radio from the radios table,\
-       or None if it doesn't exist."""
+def select_radio(channel):
+    """ Select radio from db by its id==channel number and return dict of name and url if there is one.
+        Return None if there isn't one going by that id. """
     with DBase() as cur:
-        cur.execute("SELECT * FROM radios WHERE defRadio=True;")
-        defRadio = cur.fetchone()
-        if defRadio!=None:
-            return {'name' : defRadio['name'], 'url' : defRadio['url']}
+        cur.execute(("SELECT * FROM radios WHERE id=(?);"),(str(channel)))
+        radio_channel = cur.fetchone()
+        if radio_channel != None:
+            return {'name' : radio_channel['name'], 'url' : radio_channel['url']}
         else: return None
 
 def save_radios(radios):
     """radios is a list of dictionaries"""
     with DBase() as cur:
         for radio in radios:
-            radioId = radio['id']
-            radioName = radio['name']
-            radioUrl = radio['url']
-            radioDef = radio['defRadio']
             #first try to UPDATE, if row exists it will be updated, else nothing happends
-            cur.execute("UPDATE radios SET name=?, url=?, defRadio=? WHERE id=?;", (radioName, radioUrl, radioDef, radioId))
-            #next try to INSERT, if row exists nothing happends, else new row is created
-            #cur.execute("INSERT INTO radios VALUES(?, ?, ?, ?);", (radioId, radioName, radioUrl, radioDef))
+            cur.execute("UPDATE radios SET name=?, url=? WHERE id=?;", (radio['name'], radio['url'], radio['id']))
+            if cur.rowcount == 0:
+                #next try to INSERT, if row exists nothing happends, else new row is created
+                cur.execute("INSERT INTO radios VALUES(?, ?, ?);", (radio['id'], radio['name'], radio['url']))
 
 
 def main():
     print("main()")
-    NEW_RADIOS = [{ 'id': 1, 'name' : "deepthroat",\
-            'url' :  "https://ch02.cdn.eurozet.pl/CHIDEP.mp3", 'defRadio' : False },
-            { 'id' : 2, 'name' : "antyradio",\
-            'url' :"http://an01.cdn.eurozet.pl/ant-waw.mp3", 'defRadio' : True },
-            { 'id' : 3, 'name' : "eskarock",\
-            'url' : "http://waw01-02.ic.smcdn.pl:8000/5380-1.aac.m3u", 'defRadio' : False },\
-            { 'id' : 5, 'name' : "test",\
-            'url' : "https://test.org", 'defRadio' : False }]
     create_empty_db()
     save_radios(DEF_RADIOS)
     add_sensor(DEF_SENSORS_LIST)
@@ -199,8 +177,7 @@ def main():
     #    print()
     #print("volume")
     #update_volume(0)
-    #print(get_volume())
-
+    #print(get_radios2())
 
 if __name__ == "__main__":
     main()

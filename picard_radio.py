@@ -40,6 +40,7 @@ class Radio:
                 self.player.play()
                 self.nowPlaying = source, name
                 update_now_playing((name,source))
+                # set volume at the begging at moderate level
                 self.player.audio_set_volume(40)
                 update_volume(self.return_volume())
         else:
@@ -81,6 +82,16 @@ class Radio:
             newVolume = currentVolume - 5
             self.player.audio_set_volume(newVolume)
             update_volume(newVolume)
+
+    def volume_set(self, value):
+        if value < 0:
+            newVolume = 0
+        elif value > 100:
+            newVolume = 100
+        else:
+            newVolume = value
+        self.player.audio_set_volume(newVolume)
+        update_volume(newVolume)
 
 
 def main():
