@@ -9,7 +9,6 @@ luma.core==2.4.0
 luma.led-matrix==1.7.0
 MarkupSafe==2.1.2
 Pillow==9.4.0
-pkg-resources==0.0.0
 pyftdi==0.54.0
 pyserial==3.5
 python-vlc==3.0.18121
